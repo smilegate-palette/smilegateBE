@@ -29,6 +29,7 @@ public class Project {
         }
     }
 
+    //게시글 목록 조회
     @GetMapping(value = "/project", consumes = {MediaType.APPLICATION_JSON_VALUE})
     public ResponseEntity<?> GetProjectIndex(){
         List<ProjectDTO.ProjectResponse> projectResponses = projectService.GetprojectIndex();
@@ -36,6 +37,18 @@ public class Project {
             return ResponseEntity.status(HttpStatus.OK).body(projectResponses);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("게시글 조회에 실패했습니다." + e);
+        }
+
+    }
+
+    //게시글 상세 조회
+    @GetMapping(value = "/project/{project_id}", consumes = {MediaType.APPLICATION_JSON_VALUE})
+    public ResponseEntity<?> GetProjectDetail(@PathVariable("project_id") Long project_id){
+        List<ProjectDTO.ProjectDetailResponse> projectDetailResponses = projectService.GetprojectDetail(project_id);
+        try{
+            return ResponseEntity.status(HttpStatus.OK).body(projectDetailResponses);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("게시글 상세 조회에 실패했습니다." + e);
         }
 
     }
@@ -57,7 +70,7 @@ public class Project {
 
     //게시글 삭제
     @DeleteMapping(value = "/project/{user_id}/{project_id}", consumes = {MediaType.APPLICATION_JSON_VALUE })
-    public ResponseEntity<?> UpdateProjectPost(@PathVariable("project_id") Long project_id ) throws Exception {
+    public ResponseEntity<?> DeleteProjectPost(@PathVariable("project_id") Long project_id ) throws Exception {
 
         boolean success = projectService.DeleteProject(project_id);
 

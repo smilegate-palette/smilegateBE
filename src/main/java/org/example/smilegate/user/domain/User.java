@@ -2,6 +2,7 @@ package org.example.smilegate.user.domain;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.example.smilegate.comment.domain.Comment;
 import org.example.smilegate.project.domain.Project;
 import org.example.smilegate.user.dto.UserDTO;
 
@@ -31,6 +32,9 @@ public class User {
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Project> projects = new ArrayList<>();
+
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Comment> comments = new ArrayList<>();
 
 
 

@@ -9,8 +9,9 @@ import org.example.smilegate.user.domain.User;
 import org.example.smilegate.user.repository.UserRepository;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -47,6 +48,19 @@ public class ProjectService {
             throw new RuntimeException(e);
         }
 
+    }
+
+   //프로젝트 상세 조회
+    public List<ProjectDTO.ProjectDetailResponse> GetprojectDetail(Long proejct_id){
+        try{
+            Optional<Project> projectOpt = projectRepository.findById(proejct_id);
+            Project project = projectOpt.orElseThrow(() -> new RuntimeException("프로젝트를 찾을 수 없습니다. 아이디: " + proejct_id));
+            ProjectDTO.ProjectDetailResponse projectDetailResponse = new ProjectDTO.ProjectDetailResponse(project);
+            return Collections.singletonList(projectDetailResponse);
+
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public List<ProjectDTO.HomeResponse> Getprojecthome(){

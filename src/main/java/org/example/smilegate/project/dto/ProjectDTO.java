@@ -1,16 +1,16 @@
 package org.example.smilegate.project.dto;
 
 import jakarta.persistence.Column;
-import jakarta.persistence.Id;
 import lombok.Getter;
 import lombok.Setter;
-import org.example.smilegate.project.domain.BaseTimeEntity;
+import org.example.smilegate.comment.domain.Comment;
 import org.example.smilegate.project.domain.Project;
 import org.example.smilegate.project.domain.ProjectCategory;
 import org.example.smilegate.project.domain.ProjectStatus;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 public class ProjectDTO  {
 
@@ -47,6 +47,46 @@ public class ProjectDTO  {
             this.created_at=project.getCreatedAt();
             this.updated_at=project.getUpdatedAt();
             this.like_count=project.getLike_count();
+        }
+    }
+
+    @Getter
+    @Setter
+    public static class ProjectDetailResponse{
+        @Column(nullable = false)
+        private String project_title;
+        @Column(nullable = false)
+        private String program_name;
+        @Column(nullable = false)
+        private Integer year;
+        private String region;
+        private ProjectCategory category;
+        @Column(nullable = false)
+        private ProjectStatus status;
+        private String media_url;
+        @Column(nullable = false)
+        private Integer view_count;
+        private LocalDateTime created_at;
+        private LocalDateTime updated_at;
+        int like_count;
+        String description;
+        List<Comment> comments;
+
+        public ProjectDetailResponse(Project project) {
+            this.project_title=project.getProject_title();
+            this.program_name=project.getProgram_name();
+            this.year=project.getYear();
+            this.region=project.getRegion();
+            this.category=project.getCategory();
+            this.status=project.getStatus();
+            this.media_url=project.getMedia_url();
+            this.view_count=project.getView_count();
+            this.created_at=project.getCreatedAt();
+            this.updated_at=project.getUpdatedAt();
+            this.like_count=project.getLike_count();
+            this.description=project.getDescription();
+            this.comments=project.getComments();
+
         }
     }
 

@@ -4,11 +4,13 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.example.smilegate.comment.domain.Comment;
 import org.example.smilegate.project.dto.ProjectDTO;
 import org.example.smilegate.user.domain.User;
 
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 @Entity
@@ -44,6 +46,8 @@ public class Project extends BaseTimeEntity{
     @JoinColumn(name = "user_id")
     private User user;
 
+    @OneToMany(mappedBy = "project", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Comment> comments = new ArrayList<>();
     public Project(ProjectDTO.ProjectRequest request) {
         this.project_title=request.getProject_title();
         this.category=request.getCategory();
