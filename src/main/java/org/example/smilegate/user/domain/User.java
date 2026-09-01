@@ -26,6 +26,7 @@ public class User {
     String email;
     @Column(nullable = false)
     String password;
+    @Enumerated(EnumType.STRING)
     UserRole role;
     String provider; // "naver", "google", "kakao"
     String providerId;

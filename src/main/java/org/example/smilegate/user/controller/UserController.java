@@ -65,14 +65,16 @@ public class UserController {
     }
 
     @PostMapping(value = "/{provider}/callback")
-    public ResponseEntity<?> oauthCallback(@PathVariable String provider, @RequestParam String code, @RequestParam(required = false) String state ) {
+    public ResponseEntity<?> oauthCallback(@PathVariable String provider, @RequestBody UserDTO.SNSloginRequest loginRequest) {
         OAuthService oAuthService = oAuthServiceFactory.getService(provider);
 
-        String accessToken = oAuthService.getAccessToken(code,state);
+        String accessToken = oAuthService.getAccessToken(loginRequest);
         User user = oAuthService.getUserInfo(accessToken);
 
         UserDTO.UserLoginResponse response = userService.SNSLogin(user, provider);
         return ResponseEntity.ok(response);
     }
+
+
 
 }

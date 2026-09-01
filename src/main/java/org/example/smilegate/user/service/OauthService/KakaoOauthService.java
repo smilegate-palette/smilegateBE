@@ -1,20 +1,21 @@
 package org.example.smilegate.user.service.OauthService;
 
 import jakarta.transaction.Transactional;
+import lombok.extern.slf4j.Slf4j;
 import org.example.smilegate.config.global.Oauth.OAuthService;
 import org.example.smilegate.user.domain.User;
 import org.example.smilegate.user.domain.UserRole;
+import org.example.smilegate.user.dto.UserDTO;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.web.client.RestTemplate;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
-
+@Slf4j
 @Service
 @Transactional
 public class KakaoOauthService implements OAuthService {
@@ -29,18 +30,21 @@ public class KakaoOauthService implements OAuthService {
     private String redirectUri;
 
     @Override
-    public String getAccessToken(String code, String state) {
+    public String getAccessToken(UserDTO.SNSloginRequest loginrequest) {
         RestTemplate restTemplate = new RestTemplate();
         String tokenUrl = "https://kauth.kakao.com/oauth/token";
 
-        LinkedMultiValueMap<String, String> params = new LinkedMultiValueMap<>();
-        params.add("grant_type", "authorization_code");
-        params.add("client_id", clientId);
-        params.add("client_secret", clientSecret);
-        params.add("code", code);
-        params.add("redirect_uri", redirectUri); // 카카오 설정에 등록된 리다이렉트 URI
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
 
-        HttpEntity<LinkedMultiValueMap<String, String>> request = new HttpEntity<>(params);
+        String body = "grant_type=authorization_code"
+                + "&client_id=" + clientId
+                + "&client_secret=" + clientSecret
+                + "&redirect_uri=" + URLEncoder.encode(redirectUri, StandardCharsets.UTF_8)
+                + "&code=" + loginrequest.getCode();
+
+
+        HttpEntity<String> request = new HttpEntity<>(body, headers);
         ResponseEntity<Map> response = restTemplate.postForEntity(tokenUrl, request, Map.class);
 
         return (String) response.getBody().get("access_token");
@@ -66,9 +70,16 @@ public class KakaoOauthService implements OAuthService {
 
         Map<String, Object> kakaoAccount = (Map<String, Object>) body.get("kakao_account");
         Map<String, Object> profile = (Map<String, Object>) kakaoAccount.get("profile");
+        Long kakaoId = ((Number) body.get("id")).longValue();
+
+        String email = kakaoAccount != null ? (String) kakaoAccount.get("email") : null;
+        if (email == null) {
+            // 이메일 동의 안 했거나 미제공 시 대체 이메일 생성
+            email = "kakao_" + kakaoId + "@kakao.local";
+        }
 
         return User.builder()
-                .email((String) kakaoAccount.get("email"))
+                .email(email)
                 .role(UserRole.USER)
                 .username((String) profile.get("nickname"))
                 .build();
@@ -76,7 +87,7 @@ public class KakaoOauthService implements OAuthService {
 
     @Override
     public String getProviderName() {
-        return "Kakao";
+        return "kakao";
     }
 }
 

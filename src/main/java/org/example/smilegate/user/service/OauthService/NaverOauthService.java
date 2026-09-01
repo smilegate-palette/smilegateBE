@@ -5,15 +5,15 @@ import lombok.NoArgsConstructor;
 import org.example.smilegate.config.global.Oauth.OAuthService;
 import org.example.smilegate.user.domain.User;
 import org.example.smilegate.user.domain.UserRole;
+import org.example.smilegate.user.dto.UserDTO;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.web.client.RestTemplate;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
 @NoArgsConstructor
@@ -29,18 +29,21 @@ public class NaverOauthService implements OAuthService {
 
 
     @Override
-    public String getAccessToken(String code, String state) {
+    public String getAccessToken(UserDTO.SNSloginRequest loginRequest) {
         RestTemplate restTemplate = new RestTemplate();
         String tokenUrl = "https://nid.naver.com/oauth2.0/token";
 
-        LinkedMultiValueMap<String, String> params = new LinkedMultiValueMap<>();
-        params.add("grant_type", "authorization_code");
-        params.add("client_id", clientId);
-        params.add("client_secret", clientSecret);
-        params.add("code", code);
-        params.add("state", state);
 
-        HttpEntity<LinkedMultiValueMap<String, String>> request = new HttpEntity<>(params);
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+
+        String body = "grant_type=authorization_code"
+                + "&client_id=" + clientId
+                + "&client_secret=" + clientSecret
+                + "&code=" + loginRequest.getCode();
+
+
+        HttpEntity<String> request = new HttpEntity<>(body, headers);
         ResponseEntity<Map> response = restTemplate.postForEntity(tokenUrl, request, Map.class);
 
         return (String) response.getBody().get("access_token");
@@ -64,14 +67,13 @@ public class NaverOauthService implements OAuthService {
         Map<String, Object> body = response.getBody();
         Map<String, Object> userdata = (Map<String, Object>) body.get("response");
         return User.builder()
-                .id((Long) userdata.get("id"))
                 .email((String) userdata.get("email"))
                 .role(UserRole.USER)
                 .username((String) userdata.get("name"))
                 .build();
     }
     public String getProviderName(){
-        return "Naver";
+        return "naver";
     };
 
 

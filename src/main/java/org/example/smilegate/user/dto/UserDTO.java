@@ -58,5 +58,14 @@ public class UserDTO {
 
     }
 
+    @Getter
+    @Setter
+    @AllArgsConstructor
+    public static class SNSloginRequest{
+        private String state;
+        private String code;
+
+    }
+
 
 }
