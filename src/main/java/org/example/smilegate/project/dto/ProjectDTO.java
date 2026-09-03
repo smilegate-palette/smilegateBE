@@ -102,7 +102,7 @@ public class ProjectDTO  {
         private Integer year;
         private String region;
         @Column(nullable = false)
-        private List<String> partipants;
+        private List<String> participants;
         private String description;
 
         private ProjectCategory category;
@@ -130,6 +130,23 @@ public class ProjectDTO  {
         this.category = category;
         this.status = status;
         this.media_url = mediaUrl;
+        }
+    }
+
+    @Getter
+    @Setter
+    public static class ProjectLikeResponse {
+        private int like_count;
+        private boolean isLiked;
+        private Long user_id;
+        private Long project_id;
+
+
+        public ProjectLikeResponse(int like_count, boolean isLiked, Long user_id, Long project_id) {
+            this.like_count=like_count;
+            this.isLiked=isLiked;
+            this.user_id=user_id;
+            this.project_id=project_id;
         }
     }
 }

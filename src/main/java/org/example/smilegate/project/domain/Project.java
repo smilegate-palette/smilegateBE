@@ -1,6 +1,8 @@
 package org.example.smilegate.project.domain;
 
 import jakarta.persistence.*;
+import jakarta.xml.bind.annotation.XmlSchemaType;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -29,7 +31,7 @@ public class Project extends BaseTimeEntity{
     Integer year;
     String region;
     @Column(nullable = false)
-    List<String> partipants;
+    List<String> participants;
     String description;
     @Enumerated(EnumType.STRING)
     ProjectCategory category;
@@ -41,6 +43,12 @@ public class Project extends BaseTimeEntity{
     Integer view_count;
     String reject_reason;
     int like_count;
+
+    // 정렬 기준
+    @Enumerated(EnumType.STRING)
+    Sort sort;
+    Integer page; // 페이지 번호
+    Integer limit; // 페이지당 개수
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
@@ -54,7 +62,7 @@ public class Project extends BaseTimeEntity{
         this.media_url=request.getMedia_url();
         this.description=request.getDescription();
         this.program_name=request.getProgram_name();
-        this.partipants=request.getPartipants();
+        this.participants=request.getParticipants();
         this.region=request.getRegion();
         this.status=request.getStatus();
         this.view_count=0;
@@ -68,7 +76,7 @@ public class Project extends BaseTimeEntity{
         this.media_url=request.getMedia_url();
         this.description=request.getDescription();
         this.program_name=request.getProgram_name();
-        this.partipants=request.getPartipants();
+        this.participants=request.getParticipants();
         this.region=request.getRegion();
         this.status=request.getStatus();
         this.view_count=request.getView_count();

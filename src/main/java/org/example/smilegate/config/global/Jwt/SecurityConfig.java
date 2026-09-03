@@ -40,7 +40,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/css/**", "/js/**", "/api/login", "/api/signup/**", "/api/signup",  "/api/**", "/v3/api-docs/**","/swagger-ui/**","/swagger-ui.html","/favicon.ico",
                                 "/error").permitAll()
-                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/projects/**").permitAll()
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/project/**").permitAll()
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .requestMatchers("/users").hasRole("ADMIN")
                         .anyRequest().authenticated()
