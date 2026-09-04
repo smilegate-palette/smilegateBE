@@ -2,7 +2,10 @@ package org.example.smilegate.project.service;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.example.smilegate.admin.dto.AdminDTO;
+import org.example.smilegate.admin.service.AdminService;
 import org.example.smilegate.project.domain.Project;
+import org.example.smilegate.project.domain.ProjectStatus;
 import org.example.smilegate.project.dto.ProjectDTO;
 import org.example.smilegate.project.repository.ProjectRepository;
 import org.example.smilegate.user.domain.User;
@@ -11,6 +14,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -20,6 +24,7 @@ import java.util.stream.Collectors;
 public class ProjectService {
     private final ProjectRepository projectRepository;
     private final UserRepository userRepository;
+    private final AdminService adminService;
 
     //프로젝트 게시글 생성
     public ProjectDTO.ProjectResponse CreateProject(Long user_id, ProjectDTO.ProjectRequest RequestDTO) throws Exception {
@@ -27,6 +32,7 @@ public class ProjectService {
         User user = userRepository.findById(user_id).orElseThrow(()-> new Exception("사용자가 존재하지 않습니다."));
         try {
             Project project = new Project(RequestDTO);
+            project.setStatus(ProjectStatus.PENDING);
             projectRepository.save(project);
             ProjectDTO.ProjectResponse projectResponse = new ProjectDTO.ProjectResponse(project);
             return projectResponse;
@@ -64,16 +70,37 @@ public class ProjectService {
     }
 
     public List<ProjectDTO.HomeResponse> Getprojecthome(){
-        try{
-            List<Project> projects = projectRepository.findAll();
-            List<ProjectDTO.HomeResponse> homeResponses = projects.stream()
-                    .map(project -> new ProjectDTO.HomeResponse(
-                            project.getProject_title(),project.getCategory(),project.getStatus(),project.getMedia_url())).collect(Collectors.toList());
-            return homeResponses;} catch (Exception e) {
+        try {
+            List<AdminDTO.CurationSectionDto> sections = adminService.getCurationSections();
+
+            List<AdminDTO.CurationSectionProjectDto> allProjects = sections.stream()
+                    .map(AdminDTO.CurationSectionDto::getSectionProjects)   // 각 섹션의 프로젝트 리스트
+                    .filter(Objects::nonNull)
+                    .flatMap(List::stream)
+                    .collect(Collectors.toList());
+
+            return allProjects.stream()
+                    .map(dto -> {
+                        Project project = projectRepository.findById(dto.getProjectId())
+                                .orElse(null);
+                        if (project == null) {
+                            return null;
+                        }
+                        return new ProjectDTO.HomeResponse(
+                                dto.getProjectTitle(),
+                                project.getCategory(),
+                                ProjectStatus.APPROVED,
+                                dto.getMediaUrl() != null ? dto.getMediaUrl() : project.getMedia_url()
+                        );
+                    })
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.toList());
+
+        } catch (Exception e) {
             throw new RuntimeException(e);
         }
-
     }
+
 
     //프로젝트 게시물 수정
     public ProjectDTO.ProjectResponse UpdateProject(Long project_id, ProjectDTO.ProjectRequest RequestDTO) throws Exception{

@@ -87,7 +87,7 @@ public class ProjectController {
         }
     }
 
-    //홈 화면
+    //홈 화면(큐레이션)
     @GetMapping
     public ResponseEntity<?> home() {
         try {
@@ -105,9 +105,9 @@ public class ProjectController {
        try {
            User user = userRepository.findById(user_id).orElseThrow(() -> new RuntimeException("로그인을 해주세요"));
            Project project = projectRepository.findById(project_id).orElseThrow(() -> new RuntimeException("프로젝트를 찾을 수 없습니다."));
-           project.setLike_count(project.getLike_count()+1);
+           project.setLikeCount(project.getLikeCount()+1);
            projectRepository.save(project);
-           ProjectDTO.ProjectLikeResponse projectLikeResponse = new ProjectDTO.ProjectLikeResponse(project.getLike_count(), true, user.getId(),project.getId());
+           ProjectDTO.ProjectLikeResponse projectLikeResponse = new ProjectDTO.ProjectLikeResponse(project.getLikeCount(), true, user.getId(),project.getId());
            return ResponseEntity.ok(projectLikeResponse);
 
        } catch (Exception e) {
@@ -122,9 +122,9 @@ public class ProjectController {
         try {
             User user = userRepository.findById(user_id).orElseThrow(() -> new RuntimeException("로그인을 해주세요"));
             Project project = projectRepository.findById(project_id).orElseThrow(() -> new RuntimeException("프로젝트를 찾을 수 없습니다."));
-            project.setLike_count(project.getLike_count()-1);
+            project.setLikeCount(project.getLikeCount()-1);
             projectRepository.save(project);
-            ProjectDTO.ProjectLikeResponse projectLikeResponse = new ProjectDTO.ProjectLikeResponse(project.getLike_count(), false, user.getId(),project.getId());
+            ProjectDTO.ProjectLikeResponse projectLikeResponse = new ProjectDTO.ProjectLikeResponse(project.getLikeCount(), false, user.getId(),project.getId());
             return ResponseEntity.ok(projectLikeResponse);
 
         } catch (Exception e) {

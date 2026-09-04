@@ -33,7 +33,7 @@ public class ProjectDTO  {
         private Integer view_count;
         private LocalDateTime created_at;
         private LocalDateTime updated_at;
-        int like_count;
+        int likeCount;
 
         public ProjectResponse(Project project) {
             this.project_title=project.getProject_title();
@@ -46,7 +46,7 @@ public class ProjectDTO  {
             this.view_count=project.getView_count();
             this.created_at=project.getCreatedAt();
             this.updated_at=project.getUpdatedAt();
-            this.like_count=project.getLike_count();
+            this.likeCount=project.getLikeCount();
         }
     }
 
@@ -68,7 +68,7 @@ public class ProjectDTO  {
         private Integer view_count;
         private LocalDateTime created_at;
         private LocalDateTime updated_at;
-        int like_count;
+        int likeCount;
         String description;
         List<Comment> comments;
 
@@ -83,7 +83,7 @@ public class ProjectDTO  {
             this.view_count=project.getView_count();
             this.created_at=project.getCreatedAt();
             this.updated_at=project.getUpdatedAt();
-            this.like_count=project.getLike_count();
+            this.likeCount=project.getLikeCount();
             this.description=project.getDescription();
             this.comments=project.getComments();
 
@@ -112,7 +112,7 @@ public class ProjectDTO  {
         @Column(nullable = false)
         private Integer view_count;
         private String reject_reason;
-        int like_count;
+        int likeCount;
     }
 
     @Getter
@@ -136,14 +136,14 @@ public class ProjectDTO  {
     @Getter
     @Setter
     public static class ProjectLikeResponse {
-        private int like_count;
+        private int likeCount;
         private boolean isLiked;
         private Long user_id;
         private Long project_id;
 
 
-        public ProjectLikeResponse(int like_count, boolean isLiked, Long user_id, Long project_id) {
-            this.like_count=like_count;
+        public ProjectLikeResponse(int likeCount, boolean isLiked, Long user_id, Long project_id) {
+            this.likeCount=likeCount;
             this.isLiked=isLiked;
             this.user_id=user_id;
             this.project_id=project_id;

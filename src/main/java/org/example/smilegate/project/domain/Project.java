@@ -42,13 +42,13 @@ public class Project extends BaseTimeEntity{
     @Column(nullable = false)
     Integer view_count;
     String reject_reason;
-    int like_count;
+    int likeCount;
 
     // 정렬 기준
     @Enumerated(EnumType.STRING)
     Sort sort;
     Integer page; // 페이지 번호
-    Integer limit; // 페이지당 개수
+    Integer page_limit; // 페이지당 개수
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
@@ -56,6 +56,8 @@ public class Project extends BaseTimeEntity{
 
     @OneToMany(mappedBy = "project", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Comment> comments = new ArrayList<>();
+
+
     public Project(ProjectDTO.ProjectRequest request) {
         this.project_title=request.getProject_title();
         this.category=request.getCategory();
@@ -67,7 +69,7 @@ public class Project extends BaseTimeEntity{
         this.status=request.getStatus();
         this.view_count=0;
         this.year=request.getYear();
-        this.like_count=request.getLike_count();
+        this.likeCount=request.getLikeCount();
     }
 
     public void Update(ProjectDTO.ProjectRequest request){
@@ -81,7 +83,7 @@ public class Project extends BaseTimeEntity{
         this.status=request.getStatus();
         this.view_count=request.getView_count();
         this.year=request.getYear();
-        this.like_count=request.getLike_count();
+        this.likeCount=request.getLikeCount();
     }
 
 }
