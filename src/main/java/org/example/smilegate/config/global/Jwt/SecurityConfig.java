@@ -56,7 +56,7 @@ public class SecurityConfig {
 
         // 허용할 도메인 설정
         configuration.addAllowedOrigin("http://localhost:5173");
-        configuration.addAllowedHeader("https://palette-frontend-lyart.vercel.app");
+        configuration.addAllowedOrigin("https://palette-frontend-lyart.vercel.app");
 
         configuration.addAllowedMethod("*");
         configuration.addAllowedHeader("*");
