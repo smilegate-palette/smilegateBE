@@ -32,6 +32,7 @@ public class UserDTO {
         @Column(nullable = false)
         private String password;
         private String accesstoken;
+        private UserRole role;
 
 
     }

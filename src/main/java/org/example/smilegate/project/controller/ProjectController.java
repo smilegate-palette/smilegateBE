@@ -38,8 +38,13 @@ public class ProjectController {
 
     //게시글 목록 조회
     @GetMapping(value = "/project", consumes = {MediaType.APPLICATION_JSON_VALUE})
-    public ResponseEntity<?> GetProjectIndex() {
-        List<ProjectDTO.ProjectResponse> projectResponses = projectService.GetprojectIndex();
+    public ResponseEntity<?> GetProjectIndex(@RequestParam(required = false) Integer year,
+                                             @RequestParam(required = false) Integer maxYear,
+                                             @RequestParam(required = false) String program,
+                                             @RequestParam(required = false) String type,
+                                             @RequestParam(required = false) String keyword,
+                                             @RequestParam(defaultValue = "latest") String sort) {
+        List<ProjectDTO.ProjectResponse> projectResponses = projectService.GetprojectIndex(year, maxYear, program, type, keyword, sort);
         try {
             return ResponseEntity.status(HttpStatus.OK).body(projectResponses);
         } catch (Exception e) {

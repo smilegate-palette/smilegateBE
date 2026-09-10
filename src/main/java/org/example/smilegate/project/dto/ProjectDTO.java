@@ -73,10 +73,12 @@ public class ProjectDTO  {
         private Integer view_count;
         private LocalDateTime created_at;
         private LocalDateTime updated_at;
-        int likeCount;
-        String description;
-        List<Comment> comments;
+        private int likeCount;
+        private String description;
+        private List<Comment> comments;
         private String thumbnail_url;
+        private List<String> participants;
+        private String organization;
 
         public ProjectDetailResponse(Project project) {
             this.project_id=project.getId();
@@ -94,6 +96,8 @@ public class ProjectDTO  {
             this.description=project.getDescription();
             this.comments=project.getComments();
             this.thumbnail_url=project.getThumbnail_url();
+            this.participants = project.getParticipants();
+            this.organization = project.getOrganization();
 
         }
     }
@@ -122,7 +126,9 @@ public class ProjectDTO  {
         private Integer view_count;
         private String reject_reason;
         int likeCount;
-        String thumbnail_url;
+        private String thumbnail_url;
+        private String organization;
+
     }
 
     @Getter

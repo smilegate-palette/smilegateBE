@@ -44,10 +44,10 @@ public class Project extends BaseTimeEntity{
     String reject_reason;
     int likeCount;
     String thumbnail_url;
+    String organization; //기관
 
     // 정렬 기준
-    @Enumerated(EnumType.STRING)
-    Sort sort;
+    String sort;
     Integer page; // 페이지 번호
     Integer page_limit; // 페이지당 개수
 

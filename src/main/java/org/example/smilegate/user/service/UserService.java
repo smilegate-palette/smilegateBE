@@ -55,7 +55,7 @@ public class UserService {
         String accesstoken = perfix + jwtUtil.createToken(user.getUsername(), user.getRole());
         UserDTO.UserSignupRequest loginResponseDTO = new UserDTO.UserSignupRequest(user.getUsername(),user.getEmail(), user.getPassword(), user.getRole());
 
-        return new UserDTO.UserLoginResponse(user.getId(),loginResponseDTO.getEmail(),passwordEncoder.encode(loginResponseDTO.getPassword()), accesstoken);
+        return new UserDTO.UserLoginResponse(user.getId(),loginResponseDTO.getEmail(),passwordEncoder.encode(loginResponseDTO.getPassword()), accesstoken,user.getRole());
     }
 
     //sns 로그인, 회원가입
@@ -71,10 +71,10 @@ public class UserService {
         String token = jwtUtil.createToken(snsuser.getUsername(), UserRole.USER);
         if(user == null){
            userRepository.save(newUser);
-            return new UserDTO.UserLoginResponse(newUser.getId(), newUser.getEmail(), newUser.getPassword(), token);
+            return new UserDTO.UserLoginResponse(newUser.getId(), newUser.getEmail(), newUser.getPassword(), token,newUser.getRole());
         }
         else{
-            return new UserDTO.UserLoginResponse(user.getId(), user.getEmail(), user.getPassword(), token);
+            return new UserDTO.UserLoginResponse(user.getId(), user.getEmail(), user.getPassword(), token,newUser.getRole());
         }
 
     }

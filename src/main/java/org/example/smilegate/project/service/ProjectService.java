@@ -10,6 +10,7 @@ import org.example.smilegate.project.dto.ProjectDTO;
 import org.example.smilegate.project.repository.ProjectRepository;
 import org.example.smilegate.user.domain.User;
 import org.example.smilegate.user.repository.UserRepository;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
@@ -44,14 +45,78 @@ public class ProjectService {
 
     }
 
-    //프로젝트 목록 조회
-    public List<ProjectDTO.ProjectResponse> GetprojectIndex(){
-        try{
-        List<Project> projects = projectRepository.findAll();
-        List<ProjectDTO.ProjectResponse> projectResponses = projects.stream()
-                .map(project -> new ProjectDTO.ProjectResponse(
-                        project)).collect(Collectors.toList());
-        return projectResponses;} catch (Exception e) {
+    //프로젝트 목록 조회(검색 필터링)
+    public List<ProjectDTO.ProjectResponse> GetprojectIndex(Integer year,
+                                                            Integer maxYear,
+                                                            String program,
+                                                            String type,
+                                                            String keyword,
+                                                            String sort){
+        try {
+            {
+                Specification<Project> spec = Specification.unrestricted();
+                spec = spec.and((root, query, cb) ->
+                        cb.equal(root.get("status"), ProjectStatus.APPROVED)
+                );
+
+                // 예: 2025 선택
+                if (year != null) {
+                    spec = spec.and((root, query, cb) ->
+                            cb.equal(root.get("year"), year)
+                    );
+                }
+
+                // 예: ~2023 선택
+                if (maxYear != null) {
+                    spec = spec.and((root, query, cb) ->
+                            cb.lessThanOrEqualTo(root.get("year"), maxYear)
+                    );
+                }
+
+                // 예: 창의워크숍 / 유스파티 선택
+                if (program != null && !program.isBlank()) {
+                    spec = spec.and((root, query, cb) ->
+                            cb.equal(root.get("program_name"), program)
+                    );
+                }
+
+                // 예: GAME / AI / VIDEO 선택
+                if (type != null && !type.isBlank()) {
+                    spec = spec.and((root, query, cb) ->
+                            cb.equal(root.get("category"), type)
+                    );
+                }
+
+                // 프로젝트명 또는 참여자명 검색
+                if (keyword != null && !keyword.isBlank()) {
+                    String pattern = "%" + keyword.trim().toLowerCase(Locale.ROOT) + "%";
+
+                    spec = spec.and((root, query, cb) ->
+                            cb.or(
+                                    cb.like(cb.lower(root.get("projectTitle")), pattern),
+                                    cb.like(cb.lower(root.get("participants")), pattern)
+                            )
+                    );
+                }
+
+                org.springframework.data.domain.Sort springSort =
+                        "popular".equalsIgnoreCase(sort)
+                                ? org.springframework.data.domain.Sort.by(
+                                org.springframework.data.domain.Sort.Direction.DESC,
+                                "likeCount"
+                        )
+                                : org.springframework.data.domain.Sort.by(
+                                org.springframework.data.domain.Sort.Direction.DESC,
+                                "createdAt"
+                        );
+                List<Project> projects = projectRepository.findAll(spec, springSort);
+                List<ProjectDTO.ProjectResponse> projectResponses = projects.stream()
+                        .map(project -> new ProjectDTO.ProjectResponse(
+                                project)).collect(Collectors.toList());
+                return projectResponses;
+            }
+        }
+            catch (Exception e) {
             throw new RuntimeException(e);
         }
 
@@ -78,6 +143,7 @@ public class ProjectService {
                     .map(AdminDTO.CurationSectionDto::getSectionProjects)   // 각 섹션의 프로젝트 리스트
                     .filter(Objects::nonNull)
                     .flatMap(List::stream)
+                    .filter(entry -> entry.getStatus() == ProjectStatus.APPROVED)
                     .collect(Collectors.toList());
 
             return allProjects.stream()
