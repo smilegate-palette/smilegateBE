@@ -4,6 +4,7 @@ import jakarta.persistence.Column;
 import lombok.Getter;
 import lombok.Setter;
 import org.example.smilegate.comment.domain.Comment;
+import org.example.smilegate.comment.dto.CommentDTO;
 import org.example.smilegate.project.domain.Project;
 import org.example.smilegate.project.domain.ProjectCategory;
 import org.example.smilegate.project.domain.ProjectStatus;
@@ -75,7 +76,7 @@ public class ProjectDTO  {
         private LocalDateTime updated_at;
         private int likeCount;
         private String description;
-        private List<Comment> comments;
+        private List<CommentDTO.CommentResponse> comments;
         private String thumbnail_url;
         private List<String> participants;
         private String organization;
@@ -94,7 +95,9 @@ public class ProjectDTO  {
             this.updated_at=project.getUpdatedAt();
             this.likeCount=project.getLikeCount();
             this.description=project.getDescription();
-            this.comments=project.getComments();
+            this.comments = project.getComments().stream()
+                    .map(CommentDTO.CommentResponse::new)
+                    .toList();
             this.thumbnail_url=project.getThumbnail_url();
             this.participants = project.getParticipants();
             this.organization = project.getOrganization();
