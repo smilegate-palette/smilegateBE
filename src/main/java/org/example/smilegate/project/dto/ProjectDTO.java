@@ -34,6 +34,7 @@ public class ProjectDTO  {
         private LocalDateTime created_at;
         private LocalDateTime updated_at;
         int likeCount;
+        private String thumbnail_url;
 
         public ProjectResponse(Project project) {
             this.project_title=project.getProject_title();
@@ -47,6 +48,7 @@ public class ProjectDTO  {
             this.created_at=project.getCreatedAt();
             this.updated_at=project.getUpdatedAt();
             this.likeCount=project.getLikeCount();
+            this.thumbnail_url=project.getThumbnail_url();
         }
     }
 
@@ -71,6 +73,7 @@ public class ProjectDTO  {
         int likeCount;
         String description;
         List<Comment> comments;
+        private String thumbnail_url;
 
         public ProjectDetailResponse(Project project) {
             this.project_title=project.getProject_title();
@@ -86,6 +89,7 @@ public class ProjectDTO  {
             this.likeCount=project.getLikeCount();
             this.description=project.getDescription();
             this.comments=project.getComments();
+            this.thumbnail_url=project.getThumbnail_url();
 
         }
     }
@@ -93,6 +97,7 @@ public class ProjectDTO  {
 
     @Getter
     @Setter
+
     public static class ProjectRequest{
         @Column(nullable = false)
         private String project_title;
@@ -113,6 +118,7 @@ public class ProjectDTO  {
         private Integer view_count;
         private String reject_reason;
         int likeCount;
+        String thumbnail_url;
     }
 
     @Getter
@@ -124,12 +130,14 @@ public class ProjectDTO  {
         @Column(nullable = false)
         private ProjectStatus status;
         private String media_url;
+        private String thumbnail_url;
 
-        public HomeResponse(String projectTitle, ProjectCategory category, ProjectStatus status, String mediaUrl) {
+        public HomeResponse(String projectTitle, ProjectCategory category, ProjectStatus status, String mediaUrl,String thumbnail_url) {
         this.project_title = projectTitle;
         this.category = category;
         this.status = status;
         this.media_url = mediaUrl;
+        this.thumbnail_url=thumbnail_url;
         }
     }
 

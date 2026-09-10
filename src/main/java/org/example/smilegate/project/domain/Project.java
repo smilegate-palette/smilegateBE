@@ -43,6 +43,7 @@ public class Project extends BaseTimeEntity{
     Integer view_count;
     String reject_reason;
     int likeCount;
+    String thumbnail_url;
 
     // 정렬 기준
     @Enumerated(EnumType.STRING)
@@ -70,6 +71,7 @@ public class Project extends BaseTimeEntity{
         this.view_count=0;
         this.year=request.getYear();
         this.likeCount=request.getLikeCount();
+        this.thumbnail_url=request.getThumbnail_url();
     }
 
     public void Update(ProjectDTO.ProjectRequest request){
@@ -84,6 +86,7 @@ public class Project extends BaseTimeEntity{
         this.view_count=request.getView_count();
         this.year=request.getYear();
         this.likeCount=request.getLikeCount();
+        this.thumbnail_url=request.getThumbnail_url();
     }
 
 }

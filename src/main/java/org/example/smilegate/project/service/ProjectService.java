@@ -12,10 +12,7 @@ import org.example.smilegate.user.domain.User;
 import org.example.smilegate.user.repository.UserRepository;
 import org.springframework.stereotype.Service;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -25,14 +22,18 @@ public class ProjectService {
     private final ProjectRepository projectRepository;
     private final UserRepository userRepository;
     private final AdminService adminService;
+    private final ImageService imageService;
+
 
     //프로젝트 게시글 생성
     public ProjectDTO.ProjectResponse CreateProject(Long user_id, ProjectDTO.ProjectRequest RequestDTO) throws Exception {
 
         User user = userRepository.findById(user_id).orElseThrow(()-> new Exception("사용자가 존재하지 않습니다."));
         try {
+            imageService.uploadThumbnailIfBase64(RequestDTO);
             Project project = new Project(RequestDTO);
             project.setStatus(ProjectStatus.PENDING);
+            project.setUser(user);
             projectRepository.save(project);
             ProjectDTO.ProjectResponse projectResponse = new ProjectDTO.ProjectResponse(project);
             return projectResponse;
@@ -90,7 +91,8 @@ public class ProjectService {
                                 dto.getProjectTitle(),
                                 project.getCategory(),
                                 ProjectStatus.APPROVED,
-                                dto.getMediaUrl() != null ? dto.getMediaUrl() : project.getMedia_url()
+                                dto.getMediaUrl() != null ? dto.getMediaUrl() : project.getMedia_url(),
+                                project.getThumbnail_url()
                         );
                     })
                     .filter(Objects::nonNull)
@@ -106,6 +108,7 @@ public class ProjectService {
     public ProjectDTO.ProjectResponse UpdateProject(Long project_id, ProjectDTO.ProjectRequest RequestDTO) throws Exception{
         Project project = projectRepository.findById(project_id).orElseThrow(()-> new Exception("프로젝트가 존재하지 않습니다."));
         try{
+            imageService.uploadThumbnailIfBase64(RequestDTO);
             project.Update(RequestDTO);
             projectRepository.save(project);
             ProjectDTO.ProjectResponse projectResponse = new ProjectDTO.ProjectResponse(project);
@@ -114,6 +117,8 @@ public class ProjectService {
             throw new RuntimeException(e);
         }
     }
+
+
 
     //프로젝트 게시글 삭제
     public boolean DeleteProject(Long project_id) throws Exception{
