@@ -92,7 +92,8 @@ public class ProjectService {
                                 project.getCategory(),
                                 ProjectStatus.APPROVED,
                                 dto.getMediaUrl() != null ? dto.getMediaUrl() : project.getMedia_url(),
-                                project.getThumbnail_url()
+                                project.getThumbnail_url(),
+                                project.getId()
                         );
                     })
                     .filter(Objects::nonNull)

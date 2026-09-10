@@ -18,6 +18,7 @@ public class ProjectDTO  {
     @Getter
     @Setter
     public static class ProjectResponse{
+        private Long project_id;
         @Column(nullable = false)
         private String project_title;
         @Column(nullable = false)
@@ -37,6 +38,7 @@ public class ProjectDTO  {
         private String thumbnail_url;
 
         public ProjectResponse(Project project) {
+            this.project_id = project.getId();
             this.project_title=project.getProject_title();
             this.program_name=project.getProgram_name();
             this.year=project.getYear();
@@ -55,6 +57,7 @@ public class ProjectDTO  {
     @Getter
     @Setter
     public static class ProjectDetailResponse{
+        private Long project_id;
         @Column(nullable = false)
         private String project_title;
         @Column(nullable = false)
@@ -76,6 +79,7 @@ public class ProjectDTO  {
         private String thumbnail_url;
 
         public ProjectDetailResponse(Project project) {
+            this.project_id=project.getId();
             this.project_title=project.getProject_title();
             this.program_name=project.getProgram_name();
             this.year=project.getYear();
@@ -124,6 +128,7 @@ public class ProjectDTO  {
     @Getter
     @Setter
     public static class HomeResponse{
+        private Long project_id;
         @Column(nullable = false)
         private String project_title;
         private ProjectCategory category;
@@ -132,12 +137,13 @@ public class ProjectDTO  {
         private String media_url;
         private String thumbnail_url;
 
-        public HomeResponse(String projectTitle, ProjectCategory category, ProjectStatus status, String mediaUrl,String thumbnail_url) {
+        public HomeResponse(String projectTitle, ProjectCategory category, ProjectStatus status, String mediaUrl,String thumbnail_url, Long project_id) {
         this.project_title = projectTitle;
         this.category = category;
         this.status = status;
         this.media_url = mediaUrl;
         this.thumbnail_url=thumbnail_url;
+        this.project_id=project_id;
         }
     }
 
