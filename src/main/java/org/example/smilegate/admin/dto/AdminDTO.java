@@ -45,7 +45,7 @@ public class AdminDTO {
 
         public ProjectListItemDto(Project project){
             projectId=project.getId();
-            projectTitle=this.getProjectTitle();
+            projectTitle=project.getProject_title();
             username= Optional.ofNullable(project.getUser())
                     .map(User::getUsername)
                     .orElse("unknown");

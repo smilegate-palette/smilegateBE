@@ -39,6 +39,17 @@ public class StoryController {
 
     }
 
+    @GetMapping(value = "/story", consumes = {MediaType.APPLICATION_JSON_VALUE})
+    public ResponseEntity<?> GetStoryHome() {
+        try {
+            List<StoryDTO.StoryRequest> Responses = storyService.GetStoryIndex();
+            return ResponseEntity.status(HttpStatus.OK).body(Responses);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("스토리 조회에 실패했습니다." + e);
+        }
+
+    }
+
 
     //스토리 수정
     @PatchMapping(value = "/admin/story/{user_id}/{story_id}", consumes = {MediaType.APPLICATION_JSON_VALUE})

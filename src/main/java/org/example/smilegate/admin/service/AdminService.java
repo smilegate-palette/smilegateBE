@@ -124,6 +124,7 @@ public class AdminService {
                         dto.setProjectTitle(link.getProject().getProject_title());
                         dto.setMediaUrl(link.getProject().getMedia_url());
                         dto.setDisplayOrder(link.getDisplayOrder());
+                        dto.setStatus(link.getProject().getStatus());
                         return dto;
                     })
                     .collect(Collectors.toList());
