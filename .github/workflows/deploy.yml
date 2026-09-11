@@ -51,7 +51,6 @@ jobs:
             export KAKAO_REDIRECT=$KAKAO_REDIRECT
             export SUPABASE_URL=$SUPABASE_URL
             export SUPABASE_SERVICE_ROLE_KEY=$SUPABASE_SERVICE_ROLE_KEY
-            export SUPABASE_STORAGE_BUCKET=$SUPABASE_STORAGE_BUCKET
             sh /home/ubuntu/app/deploy.sh
         env:
           JWT_SECRET_KEY: ${{ secrets.JWT_SECRET_KEY }}
@@ -64,4 +63,4 @@ jobs:
           KAKAO_REDIRECT: ${{ secrets.KAKAO_REDIRECT }}
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-          SUPABASE_STORAGE_BUCKET: ${{ secrets.SUPABASE_STORAGE_BUCKET }}
+

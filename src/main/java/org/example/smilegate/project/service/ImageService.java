@@ -29,18 +29,15 @@ public class ImageService {
     @Value("${supabase.service-role-key}")
     private String supabaseServiceRoleKey;
 
-    @Value("${supabase.storage-bucket}")
-    private String thumbnailBucket;
 
     private static final long MAX_THUMBNAIL_BYTES = 10L * 1024 * 1024;
     private static final HttpClient HTTP_CLIENT = HttpClient.newBuilder()
             .connectTimeout(Duration.ofSeconds(10))
             .build();
 
-    public void uploadThumbnailIfBase64(ProjectDTO.ProjectRequest requestDTO) {
-        String thumbnail = requestDTO.getThumbnail_url();
+    public String uploadThumbnailIfBase64(String thumbnail, String thumbnailBucket) {
         if (thumbnail == null || thumbnail.isBlank() || isHttpUrl(thumbnail)) {
-            return;
+            return thumbnail;
         }
 
         ThumbnailData thumbnailData = parseThumbnail(thumbnail.trim());
@@ -71,8 +68,8 @@ public class ImageService {
             throw new IllegalStateException("썸네일 업로드가 중단되었습니다.", e);
         }
 
-        requestDTO.setThumbnail_url(trimTrailingSlash(supabaseUrl)
-                + "/storage/v1/object/public/" + objectPath);
+        return trimTrailingSlash(supabaseUrl)
+                + "/storage/v1/object/public/" + objectPath;
     }
 
     private ThumbnailData parseThumbnail(String value) {

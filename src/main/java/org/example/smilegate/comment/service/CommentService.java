@@ -93,4 +93,18 @@ public class CommentService {
         }
     }
 
+    //모든 댓글 조회
+    public List<CommentDTO.CommentResponse> GetComment(){
+        try {
+            List<Comment> commentList = commentRepository.findAll();
+            List<CommentDTO.CommentResponse> commentResponses = commentList.stream()
+                    .map(comment -> new CommentDTO.CommentResponse(
+                            comment)).collect(Collectors.toList());
+            return commentResponses;
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+
+        }
+    }
+
 }

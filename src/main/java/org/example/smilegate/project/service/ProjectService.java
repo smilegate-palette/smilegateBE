@@ -31,7 +31,7 @@ public class ProjectService {
 
         User user = userRepository.findById(user_id).orElseThrow(()-> new Exception("사용자가 존재하지 않습니다."));
         try {
-            imageService.uploadThumbnailIfBase64(RequestDTO);
+            RequestDTO.setThumbnail_url(imageService.uploadThumbnailIfBase64(RequestDTO.getThumbnail_url(),"thumbnails"));
             Project project = new Project(RequestDTO);
             project.setStatus(ProjectStatus.PENDING);
             project.setUser(user);
@@ -175,7 +175,7 @@ public class ProjectService {
     public ProjectDTO.ProjectResponse UpdateProject(Long project_id, ProjectDTO.ProjectRequest RequestDTO) throws Exception{
         Project project = projectRepository.findById(project_id).orElseThrow(()-> new Exception("프로젝트가 존재하지 않습니다."));
         try{
-            imageService.uploadThumbnailIfBase64(RequestDTO);
+            RequestDTO.setThumbnail_url(imageService.uploadThumbnailIfBase64(RequestDTO.getThumbnail_url(),"thumbnails"));
             project.Update(RequestDTO);
             projectRepository.save(project);
             ProjectDTO.ProjectResponse projectResponse = new ProjectDTO.ProjectResponse(project);

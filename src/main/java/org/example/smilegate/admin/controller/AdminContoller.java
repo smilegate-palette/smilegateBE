@@ -3,6 +3,8 @@ package org.example.smilegate.admin.controller;
 import lombok.RequiredArgsConstructor;
 import org.example.smilegate.admin.dto.AdminDTO;
 import org.example.smilegate.admin.service.AdminService;
+import org.example.smilegate.comment.dto.CommentDTO;
+import org.example.smilegate.comment.service.CommentService;
 import org.example.smilegate.project.dto.ProjectDTO;
 import org.example.smilegate.project.service.ProjectService;
 import org.example.smilegate.user.domain.User;
@@ -19,12 +21,13 @@ import java.util.List;
 public class AdminContoller {
     private final AdminService adminService;
     private final ProjectService projectService;
+    private final CommentService commentService;
 
     //관리자 페이지 조회
     @GetMapping(value = "/admin/{user_id}", consumes = {MediaType.APPLICATION_JSON_VALUE})
-    public ResponseEntity<?> Adminpage(@RequestBody AdminDTO.AdminRequestDto requestDto, @PathVariable Long user_id){
+    public ResponseEntity<?> Adminpage(@PathVariable Long user_id){
         try {
-            AdminDTO.AdminResponse adminResponse = adminService.Adminpage(requestDto.getTotalstory(), user_id);
+            AdminDTO.AdminResponse adminResponse = adminService.Adminpage(user_id);
             return ResponseEntity.ok(adminResponse);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("관리자 페이지 조회에 실패했습니다." + e);
@@ -95,6 +98,17 @@ public class AdminContoller {
             return ResponseEntity.ok(updated);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("큐레이션 순서 수정에 실패했습니다." + e);
+        }
+    }
+
+    // 댓글 조회
+    @GetMapping(value = "/admin/{user_id}/comment/", consumes = {MediaType.APPLICATION_JSON_VALUE })
+    public ResponseEntity<?> GetComments(@PathVariable Long user_id){
+        try {
+            List<CommentDTO.CommentResponse> responses = commentService.GetComment();
+            return ResponseEntity.status(HttpStatus.CREATED).body(responses);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("댓글 조회에 실패했습니다." + e);
         }
     }
 }

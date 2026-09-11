@@ -133,11 +133,6 @@ public class AdminDTO {
         private ProjectStatus status;
     }
 
-    @Getter
-    @Setter
-    public static class AdminRequestDto {
-        private int totalstory;
-    }
 
     @Getter
     @Setter

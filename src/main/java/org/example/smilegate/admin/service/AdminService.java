@@ -14,6 +14,7 @@ import org.example.smilegate.project.domain.ProjectStatus;
 import org.example.smilegate.project.dto.ProjectDTO;
 import org.example.smilegate.project.repository.CurationSectionRepository;
 import org.example.smilegate.project.repository.ProjectRepository;
+import org.example.smilegate.story.repository.StoryRepository;
 import org.example.smilegate.user.domain.User;
 import org.example.smilegate.user.repository.UserRepository;
 import org.springframework.stereotype.Service;
@@ -34,10 +35,12 @@ public class AdminService {
     private final CommentRepository commentRepository;
     private final CurationSectionRepository curationSectionRepository;
     private final UserRepository userRepository;
+    private final StoryRepository storyRepository;
 
 
     //관리자 페이지 조회
-    public AdminDTO.AdminResponse Adminpage(int totalStories, Long user_id){
+    public AdminDTO.AdminResponse Adminpage( Long user_id){
+        int totalStories = Math.toIntExact(storyRepository.count());
         User user = userRepository.findById(user_id).orElseThrow(()-> new RuntimeException("로그인을 해주세요."));
         List<Project> PendingProjects = projectRepository.findByStatus(ProjectStatus.PENDING);
         List<Project> AllProjects = projectRepository.findAll();
