@@ -102,7 +102,7 @@ public class AdminContoller {
     }
 
     // 댓글 조회
-    @GetMapping(value = "/admin/{user_id}/comment/", consumes = {MediaType.APPLICATION_JSON_VALUE })
+    @GetMapping(value = "/admin/{user_id}/comment", consumes = {MediaType.APPLICATION_JSON_VALUE })
     public ResponseEntity<?> GetComments(@PathVariable Long user_id){
         try {
             List<CommentDTO.CommentResponse> responses = commentService.GetComment();
