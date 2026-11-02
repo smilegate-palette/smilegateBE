@@ -37,6 +37,7 @@ public class ProjectDTO  {
         private LocalDateTime updated_at;
         int likeCount;
         private String thumbnail_url;
+        private String organization;
 
         public ProjectResponse(Project project) {
             this.project_id = project.getId();
@@ -52,6 +53,8 @@ public class ProjectDTO  {
             this.updated_at=project.getUpdatedAt();
             this.likeCount=project.getLikeCount();
             this.thumbnail_url=project.getThumbnail_url();
+            this.organization=project.getOrganization();
+
         }
     }
 

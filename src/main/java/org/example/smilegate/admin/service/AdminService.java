@@ -24,6 +24,8 @@ import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static org.example.smilegate.project.domain.ProjectStatus.APPROVED;
+
 @Service
 @Transactional
 @AllArgsConstructor
@@ -39,32 +41,33 @@ public class AdminService {
 
 
     //관리자 페이지 조회
-    public AdminDTO.AdminResponse Adminpage( Long user_id){
+    public AdminDTO.AdminResponse Adminpage(Long user_id) {
+        userRepository.findById(user_id)
+                .orElseThrow(() -> new RuntimeException("로그인을 해주세요."));
+
         int totalStories = Math.toIntExact(storyRepository.count());
-        User user = userRepository.findById(user_id).orElseThrow(()-> new RuntimeException("로그인을 해주세요."));
-        List<Project> PendingProjects = projectRepository.findByStatus(ProjectStatus.PENDING);
-        List<Project> AllProjects = projectRepository.findAll();
+        List<Project> pendingProjects = projectRepository.findByStatus(ProjectStatus.PENDING);
+        List<Project> allProjects = projectRepository.findAll();
+
         LocalDateTime startOfDay = LocalDate.now().atStartOfDay();
-        LocalDateTime endOfDay   = LocalDate.now().plusDays(1).atStartOfDay();
-        List<Comment> TodayComments = commentRepository.findByCreatedAtBetween(startOfDay,endOfDay);
+        LocalDateTime endOfDay = LocalDate.now().plusDays(1).atStartOfDay();
+        List<Comment> todayComments = commentRepository.findByCreatedAtBetween(startOfDay, endOfDay);
 
-        AdminDTO.AdminStatsDto statsDto = new AdminDTO.AdminStatsDto(PendingProjects.size(),AllProjects.size(), TodayComments.size(),totalStories);
+        AdminDTO.AdminStatsDto statsDto = new AdminDTO.AdminStatsDto(
+                pendingProjects.size(), allProjects.size(), todayComments.size(), totalStories);
 
-        List<AdminDTO.ProjectListItemDto> projectListItemDtos = PendingProjects.stream()
-                .map(project -> new AdminDTO.ProjectListItemDto(project))
+        List<AdminDTO.ProjectListItemDto> projectListItemDtos = pendingProjects.stream()
+                .map(AdminDTO.ProjectListItemDto::new)
                 .collect(Collectors.toList());
 
-
-        List<Comment> recentComments = commentRepository.findTop2ByOrderByCreatedAtDesc();
-        List<AdminDTO.CommentDto> commentDtoList = recentComments.stream()
-                .map(comment -> new AdminDTO.CommentDto(comment))
+        List<AdminDTO.CommentDto> commentDtoList = commentRepository.findTop2ByOrderByCreatedAtDesc().stream()
+                .map(AdminDTO.CommentDto::new)
                 .collect(Collectors.toList());
 
-        List<AdminDTO.CurationSectionDto> curationSectionDtos = getCurationSections();
+        // 관리자용: 승인 프로젝트 전체 + 선택 여부 (fallback 없음)
+        List<AdminDTO.CurationSectionDto> curationSectionDtos = getAdminCurationSections();
 
-        AdminDTO.AdminResponse adminResponse = new AdminDTO.AdminResponse(statsDto,projectListItemDtos,commentDtoList,curationSectionDtos);
-
-        return adminResponse;
+        return new AdminDTO.AdminResponse(statsDto, projectListItemDtos, commentDtoList, curationSectionDtos);
     }
 
     // 프로젝트 상세 조회
@@ -77,15 +80,13 @@ public class AdminService {
 
     // 프로젝트 승인
     public boolean ApproveProject(Long project_id, Long user_id){
-        try {
+
             User user = userRepository.findById(user_id).orElseThrow(() -> new RuntimeException("로그인을 해주세요."));
-            Project project = projectRepository.findById(project_id).orElseThrow(() -> new RuntimeException("프로젝트를 찾을 수 없습니다."));
-            project.setStatus(ProjectStatus.APPROVED);
+            Project project = projectRepository.findById(project_id)
+                .orElseThrow(() -> new IllegalArgumentException("프로젝트를 찾을 수 없습니다."));
+            project.setStatus(APPROVED);
             projectRepository.save(project);
             return true;
-        } catch (Exception e) {
-            return false;
-        }
 
     }
 
@@ -104,52 +105,59 @@ public class AdminService {
 
     }
 
-    // 큐레이션 조회
-    public List<AdminDTO.CurationSectionDto> getCurationSections() {
+    // 관리자 화면용 큐레이션
+// - 선택된 프로젝트: displayOrder >= 0 (저장된 순서, 앞에 노출)
+// - 선택 안 된 승인 프로젝트: displayOrder = -1 (좋아요 순, 뒤에 노출)
+    public List<AdminDTO.CurationSectionDto> getAdminCurationSections() {
+        List<Project> approved = approvedByLikes();
+
         return curationSectionRepository.findAll().stream()
-                .map(this::toDto)
+                .sorted(Comparator.comparing(CurationSection::getDisplayOrder,
+                        Comparator.nullsLast(Comparator.naturalOrder())))
+                .map(section -> {
+                    Map<Long, Integer> selected = new HashMap<>();
+                    for (CurationSectionProject link : section.getLinks()) {
+                        if (link.getProject() != null) {
+                            selected.put(link.getProject().getId(), link.getDisplayOrder());
+                        }
+                    }
+
+                    List<AdminDTO.CurationSectionProjectDto> dtos = approved.stream()
+                            .sorted(Comparator.comparing((Project p) -> !selected.containsKey(p.getId()))
+                                    .thenComparing(p -> selected.getOrDefault(p.getId(), Integer.MAX_VALUE)))
+                            .map(p -> toProjectDto(p, selected.getOrDefault(p.getId(), -1)))
+                            .collect(Collectors.toList());
+
+                    return toSectionDto(section, dtos);
+                })
                 .collect(Collectors.toList());
     }
 
-    private AdminDTO.CurationSectionDto toDto(CurationSection section) {
-        List<AdminDTO.CurationSectionProjectDto> dtos;
+    // 홈용 큐레이션
+// - 저장된 링크 중 APPROVED만 저장 순서대로
+// - 없으면 자동 선별 (좋아요 순, 동점 랜덤)
+    public List<AdminDTO.CurationSectionDto> getCurationSections() {
+        return curationSectionRepository.findAll().stream()
+                .sorted(Comparator.comparing(CurationSection::getDisplayOrder,
+                        Comparator.nullsLast(Comparator.naturalOrder())))
+                .map(section -> {
+                    List<AdminDTO.CurationSectionProjectDto> dtos = section.getLinks().stream()
+                            .filter(link -> link.getProject() != null
+                                    && link.getProject().getStatus() == APPROVED)
+                            .sorted(Comparator.comparingInt(CurationSectionProject::getDisplayOrder))
+                            .map(link -> toProjectDto(link.getProject(), link.getDisplayOrder()))
+                            .collect(Collectors.toList());
 
-        if (section.getLinks() != null && !section.getLinks().isEmpty()) {
-             //  관리자가 선택한 프로젝트
-            dtos = section.getLinks().stream()
-                    .sorted(Comparator.comparingInt(CurationSectionProject::getDisplayOrder))
-                    .map(link -> {
-                        AdminDTO.CurationSectionProjectDto dto = new AdminDTO.CurationSectionProjectDto();
-                        dto.setProjectId(link.getProject().getId());
-                        dto.setProjectTitle(link.getProject().getProject_title());
-                        dto.setMediaUrl(link.getProject().getMedia_url());
-                        dto.setDisplayOrder(link.getDisplayOrder());
-                        dto.setStatus(link.getProject().getStatus());
-                        return dto;
-                    })
-                    .collect(Collectors.toList());
-        } else {
-            //  자동 fallback: 좋아요 높은 순 3개
-            List<Project> top3 = projectRepository.findTop3ByOrderByLikeCountDesc();
-            dtos = top3.stream()
-                    .map(project -> {
-                        AdminDTO.CurationSectionProjectDto dto = new AdminDTO.CurationSectionProjectDto();
-                        dto.setProjectId(project.getId());
-                        dto.setProjectTitle(project.getProject_title());
-                        dto.setMediaUrl(project.getMedia_url());
-                        dto.setDisplayOrder(-1);  // 자동 선별이라 순서 의미 없음
-                        return dto;
-                    })
-                    .collect(Collectors.toList());
-        }
-
-        AdminDTO.CurationSectionDto sectionDto = new AdminDTO.CurationSectionDto();
-        sectionDto.setSectionId(section.getSectionId());
-        sectionDto.setTitle(section.getTitle());
-        sectionDto.setDisplayOrder(section.getDisplayOrder());
-        sectionDto.setSectionProjects(dtos);
-        return sectionDto;
+                    if (dtos.isEmpty()) {
+                        dtos = pickAutoCuration().stream()
+                                .map(p -> toProjectDto(p, -1))
+                                .collect(Collectors.toList());
+                    }
+                    return toSectionDto(section, dtos);
+                })
+                .collect(Collectors.toList());
     }
+
 
         //큐레이션 저장
         public boolean saveCuration(AdminDTO.CurationSaveRequest request) {
@@ -160,31 +168,36 @@ public class AdminService {
             CurationSection section = curationSectionRepository.findById(request.getSection_id())
                     .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 큐레이션 섹션입니다."));
 
-            // null이거나 빈 리스트면 기존 링크만 제거
-            if (request.getProjectIds() == null || request.getProjectIds().isEmpty()) {
-                section.getLinks().clear();
-                curationSectionRepository.save(section);
-                return true;
-            }
+            List<Long> requestIds = request.getProjectIds() == null ? List.of() : request.getProjectIds();
+            List<Long> uniqueIds = new ArrayList<>(new LinkedHashSet<>(requestIds));
 
-            Set<Long> uniqueIds = new LinkedHashSet<>(request.getProjectIds());
             if (uniqueIds.size() > 3) {
                 throw new IllegalArgumentException("큐레이션 프로젝트는 최대 3개까지 선택할 수 있습니다.");
             }
 
-            List<Project> projects = projectRepository.findAllById(uniqueIds);
-            if (projects.size() != uniqueIds.size()) {
-                throw new IllegalArgumentException("존재하지 않는 프로젝트 ID가 포함되어 있습니다.");
+            // 검증을 먼저 끝내서, 실패하면 기존 링크가 그대로 남도록 함
+            List<Project> ordered = new ArrayList<>();
+            if (!uniqueIds.isEmpty()) {
+                Map<Long, Project> projectMap = projectRepository.findAllById(uniqueIds).stream()
+                        .collect(Collectors.toMap(Project::getId, p -> p));
+
+                if (projectMap.size() != uniqueIds.size()) {
+                    throw new IllegalArgumentException("존재하지 않는 프로젝트 ID가 포함되어 있습니다.");
+                }
+                for (Long id : uniqueIds) {
+                    Project project = projectMap.get(id);
+                    if (project.getStatus() != APPROVED) {
+                        throw new IllegalArgumentException("승인된 프로젝트만 큐레이션에 넣을 수 있습니다. (ID: " + id + ")");
+                    }
+                    ordered.add(project);
+                }
             }
 
-            //  기존 링크 전체 제거
-            section.getLinks().clear();
-
-            // 새 링크 생성 (request 순서 = displayOrder)
-            for (int i = 0; i < projects.size(); i++) {
+            section.getLinks().clear();   // orphanRemoval로 기존 row 삭제
+            for (int i = 0; i < ordered.size(); i++) {
                 CurationSectionProject link = new CurationSectionProject();
                 link.setSection(section);
-                link.setProject(projects.get(i));
+                link.setProject(ordered.get(i));
                 link.setDisplayOrder(i);
                 section.getLinks().add(link);
             }
@@ -192,6 +205,56 @@ public class AdminService {
             curationSectionRepository.save(section);
             return true;
         }
+
+// ===== 공통 헬퍼 =====
+
+    // 승인 프로젝트를 좋아요 내림차순으로
+    private List<Project> approvedByLikes() {
+        return projectRepository.findByStatus(APPROVED).stream()
+                .sorted(Comparator.comparing(
+                        (Project p) -> Objects.requireNonNullElse(p.getLikeCount(), 0),
+                        Comparator.reverseOrder()))
+                .collect(Collectors.toList());
+    }
+
+    // 자동 선별: 좋아요 높은 순 3개, 같은 좋아요 수끼리는 랜덤
+    private List<Project> pickAutoCuration() {
+        Map<Integer, List<Project>> byLike = approvedByLikes().stream()
+                .collect(Collectors.groupingBy(
+                        p -> Objects.requireNonNullElse(p.getLikeCount(), 0),
+                        LinkedHashMap::new,
+                        Collectors.toList()));
+
+        List<Project> result = new ArrayList<>();
+        for (List<Project> group : byLike.values()) {
+            Collections.shuffle(group);
+            result.addAll(group);
+            if (result.size() >= 3) break;
+        }
+        return result.subList(0, Math.min(3, result.size()));
+    }
+
+    private AdminDTO.CurationSectionDto toSectionDto(CurationSection section,
+                                                     List<AdminDTO.CurationSectionProjectDto> dtos) {
+        AdminDTO.CurationSectionDto sectionDto = new AdminDTO.CurationSectionDto();
+        sectionDto.setSectionId(section.getSectionId());
+        sectionDto.setTitle(section.getTitle());
+        sectionDto.setDisplayOrder(section.getDisplayOrder());
+        sectionDto.setSectionProjects(dtos);
+        return sectionDto;
+    }
+
+    private AdminDTO.CurationSectionProjectDto toProjectDto(Project p, int displayOrder) {
+        AdminDTO.CurationSectionProjectDto dto = new AdminDTO.CurationSectionProjectDto();
+        dto.setProjectId(p.getId());
+        dto.setProjectTitle(p.getProject_title());
+        dto.setMediaUrl(p.getMedia_url());
+        dto.setDisplayOrder(displayOrder);
+        dto.setStatus(p.getStatus());
+        return dto;
+    }
+
+
 
 
 

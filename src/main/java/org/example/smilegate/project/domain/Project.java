@@ -58,6 +58,8 @@ public class Project extends BaseTimeEntity{
     @OneToMany(mappedBy = "project", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Comment> comments = new ArrayList<>();
 
+    @OneToMany(mappedBy = "project", cascade = CascadeType.REMOVE, orphanRemoval = true)
+    private List<CurationSectionProject> curationLinks = new ArrayList<>();
 
     public Project(ProjectDTO.ProjectRequest request) {
         this.project_title=request.getProject_title();
@@ -72,6 +74,7 @@ public class Project extends BaseTimeEntity{
         this.year=request.getYear();
         this.likeCount=request.getLikeCount();
         this.thumbnail_url=request.getThumbnail_url();
+        this.organization=request.getOrganization();
     }
 
     public void Update(ProjectDTO.ProjectRequest request){
@@ -87,6 +90,7 @@ public class Project extends BaseTimeEntity{
         this.year=request.getYear();
         this.likeCount=request.getLikeCount();
         this.thumbnail_url=request.getThumbnail_url();
+        this.organization=request.getOrganization();
     }
 
 }

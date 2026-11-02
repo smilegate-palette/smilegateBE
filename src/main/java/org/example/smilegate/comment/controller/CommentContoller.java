@@ -16,8 +16,10 @@ import java.util.List;
 public class CommentContoller {
     private final CommentService commentService;
 
-    @PostMapping(value = "/comment/{project_id}/{user_id}", consumes = {MediaType.APPLICATION_JSON_VALUE })
-    public ResponseEntity<?> PostComment(@PathVariable("project_id") Long project_id, @PathVariable("user_id") Long user_id , @RequestBody CommentDTO.CommentRequest request){
+    @PostMapping(
+            value = {"/comment/{project_id}", "/comment/{project_id}/{user_id}"},
+            consumes = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<?> PostComment(@PathVariable("project_id") Long project_id, @PathVariable(value = "user_id", required = false) Long user_id, @RequestBody CommentDTO.CommentRequest request){
         CommentDTO.CommentResponse response = commentService.CommentPost(user_id,project_id,request);
         try {
             return ResponseEntity.status(HttpStatus.CREATED).body(response);
@@ -40,7 +42,7 @@ public class CommentContoller {
     }
 
     @DeleteMapping(value = "/comment/{project_id}/{user_id}/{comment_id}", consumes = {MediaType.APPLICATION_JSON_VALUE })
-    public ResponseEntity<?> UpdateComment(@PathVariable("project_id") Long project_id, @PathVariable("user_id") Long user_id , @PathVariable("comment_id") Long comment_id) {
+    public ResponseEntity<?> DeleteComment(@PathVariable("project_id") Long project_id, @PathVariable("user_id") Long user_id , @PathVariable("comment_id") Long comment_id) {
            boolean success = commentService.CommentDelete(user_id,project_id,comment_id);
            if(success){
                return ResponseEntity.ok("댓글 삭제에 성공했습니다.");

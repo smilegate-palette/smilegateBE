@@ -17,6 +17,7 @@ public class CurationSectionProject {
     @JoinColumn(name = "section_id", nullable = false)
     private CurationSection section;
 
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "project_id", nullable = false)
     private Project project;

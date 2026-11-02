@@ -20,12 +20,14 @@ public class CommentDTO {
         private LocalDateTime created_at;
         private LocalDateTime updated_at;
         private Long comment_id;
+        private String project_title;
 
         public CommentResponse(Comment comment) {
             this.content = comment.getContent();
             this.nickname = comment.getNickname();
             this.created_at = LocalDateTime.now();
             this.comment_id=comment.getId();
+            this.project_title=comment.getProject().getProject_title();
 
         }
 

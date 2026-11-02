@@ -31,7 +31,10 @@ public class CommentService {
     public CommentDTO.CommentResponse CommentPost(Long user_id, Long project_id, CommentDTO.CommentRequest request){
         Project project = projectRepository.findById(project_id)
                 .orElseThrow(() -> new RuntimeException("프로젝트가 존재하지 않습니다."));
-        User user = userRepository.findById(user_id).orElseThrow(()-> new RuntimeException("로그인을 해주세요"));
+        User user = null;
+        if (user_id != null) {
+            user = userRepository.findById(user_id).orElse(null);
+        }
         Comment comment = Comment.builder()
                         .content(request.getContent())
                         .nickname(request.getNickname())

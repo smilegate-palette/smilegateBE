@@ -4,9 +4,11 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.example.smilegate.admin.dto.AdminDTO;
 import org.example.smilegate.admin.service.AdminService;
+import org.example.smilegate.project.domain.CurationSection;
 import org.example.smilegate.project.domain.Project;
 import org.example.smilegate.project.domain.ProjectStatus;
 import org.example.smilegate.project.dto.ProjectDTO;
+import org.example.smilegate.project.repository.CurationSectionRepository;
 import org.example.smilegate.project.repository.ProjectRepository;
 import org.example.smilegate.user.domain.User;
 import org.example.smilegate.user.repository.UserRepository;
@@ -24,6 +26,7 @@ public class ProjectService {
     private final UserRepository userRepository;
     private final AdminService adminService;
     private final ImageService imageService;
+    private final CurationSectionRepository curationSectionRepository;
 
 
     //프로젝트 게시글 생성
@@ -135,6 +138,7 @@ public class ProjectService {
         }
     }
 
+    //home 조회
     public List<ProjectDTO.HomeResponse> Getprojecthome(){
         try {
             List<AdminDTO.CurationSectionDto> sections = adminService.getCurationSections();
@@ -189,13 +193,17 @@ public class ProjectService {
 
     //프로젝트 게시글 삭제
     public boolean DeleteProject(Long project_id) throws Exception{
-        Project project = projectRepository.findById(project_id).orElseThrow(()-> new Exception("프로젝트가 존재하지 않습니다."));
-        try{
-            projectRepository.deleteById(project_id);
-            return true;
-        } catch (Exception e) {
-            throw new RuntimeException(e);
+        Project project = projectRepository.findById(project_id)
+                .orElseThrow(() -> new IllegalArgumentException("프로젝트를 찾을 수 없습니다."));
+
+        // 모든 섹션의 링크 컬렉션에서 제거 → orphanRemoval로 curation_section_project row 삭제
+        for (CurationSection section : curationSectionRepository.findAll()) {
+            section.getLinks().removeIf(link ->
+                    link.getProject() != null && project_id.equals(link.getProject().getId()));
         }
+
+        projectRepository.delete(project);
+        return true;
     }
 
 
