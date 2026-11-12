@@ -14,4 +14,6 @@ public interface CommentRepository extends JpaRepository<Comment, Long> {
     List<Comment> findTop2ByOrderByCreatedAtDesc();
 
     List<Comment> findByCreatedAtBetween(LocalDateTime start, LocalDateTime end);;
+
+    long countByCreatedAtBetween(LocalDateTime start, LocalDateTime end);
 }

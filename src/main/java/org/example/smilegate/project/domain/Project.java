@@ -45,6 +45,7 @@ public class Project extends BaseTimeEntity{
     int likeCount;
     String thumbnail_url;
     String organization; //기관
+    String team;
 
     // 정렬 기준
     String sort;
@@ -75,6 +76,7 @@ public class Project extends BaseTimeEntity{
         this.likeCount=request.getLikeCount();
         this.thumbnail_url=request.getThumbnail_url();
         this.organization=request.getOrganization();
+        this.team=request.getTeam();
     }
 
     public void Update(ProjectDTO.ProjectRequest request){
@@ -91,6 +93,7 @@ public class Project extends BaseTimeEntity{
         this.likeCount=request.getLikeCount();
         this.thumbnail_url=request.getThumbnail_url();
         this.organization=request.getOrganization();
+        this.team=request.getTeam();
     }
 
 }

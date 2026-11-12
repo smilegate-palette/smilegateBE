@@ -45,9 +45,11 @@ public class StoryService {
         try {
             User user = userRepository.findById(user_id).orElseThrow(()-> new Exception("사용자가 존재하지 않습니다."));
             StoryEntity story = storyRepository.findById(story_id).orElseThrow(()->new Exception("스토리가 존재하지 않습니다.")) ;
-            story.setStory_title(request.getStory_title());
-            story.setThumbnail_url(imageService.uploadThumbnailIfBase64(request.getThumbnail_url(),"story"));
-            story.setStory_username(request.getStory_username());
+            if (request.getStory_title() != null) story.setStory_title(request.getStory_title());
+            if (request.getThumbnail_url() != null) {
+                story.setThumbnail_url(imageService.uploadThumbnailIfBase64(request.getThumbnail_url(),"story"));
+            }
+            if (request.getStory_username() != null) story.setStory_username(request.getStory_username());
             storyRepository.save(story);
             StoryDTO.StoryRequest Response = new StoryDTO.StoryRequest(story);
             return Response;

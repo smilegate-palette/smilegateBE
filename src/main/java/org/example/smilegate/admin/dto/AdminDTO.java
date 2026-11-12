@@ -42,6 +42,12 @@ public class AdminDTO {
         private LocalDateTime createdDate;
         private ProjectCategory category;
         private ProjectStatus status;
+        private String description;
+        private String media_url;
+        private String thumbnail_url;
+        private String organization;
+        private String team;
+        private List<String> participants;
 
         public ProjectListItemDto(Project project){
             projectId=project.getId();
@@ -52,6 +58,12 @@ public class AdminDTO {
             createdDate=project.getCreatedAt();
             category=project.getCategory();
             status=project.getStatus();
+            description=project.getDescription();
+            media_url=project.getMedia_url();
+            thumbnail_url=project.getThumbnail_url();
+            organization=project.getOrganization();
+            team=project.getTeam();
+            participants=project.getParticipants();
         }
     }
 
@@ -71,6 +83,7 @@ public class AdminDTO {
         private List<String> participants;
         private String organization;
         private String thumbnail_url;
+        private String team;
 
         public ProjectDetailDto(Project project){
             project_id=project.getId();
@@ -86,6 +99,7 @@ public class AdminDTO {
             participants = project.getParticipants();
             organization = project.getOrganization();
             thumbnail_url =project.getThumbnail_url();
+            team = project.getTeam();
         }
 
     }

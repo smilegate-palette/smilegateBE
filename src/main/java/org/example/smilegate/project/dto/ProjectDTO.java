@@ -38,6 +38,7 @@ public class ProjectDTO  {
         int likeCount;
         private String thumbnail_url;
         private String organization;
+        private String team;
 
         public ProjectResponse(Project project) {
             this.project_id = project.getId();
@@ -54,6 +55,7 @@ public class ProjectDTO  {
             this.likeCount=project.getLikeCount();
             this.thumbnail_url=project.getThumbnail_url();
             this.organization=project.getOrganization();
+            this.team=project.getTeam();
 
         }
     }
@@ -83,6 +85,7 @@ public class ProjectDTO  {
         private String thumbnail_url;
         private List<String> participants;
         private String organization;
+        private String team;
 
         public ProjectDetailResponse(Project project) {
             this.project_id=project.getId();
@@ -104,6 +107,7 @@ public class ProjectDTO  {
             this.thumbnail_url=project.getThumbnail_url();
             this.participants = project.getParticipants();
             this.organization = project.getOrganization();
+            this.team = project.getTeam();
 
         }
     }
@@ -134,6 +138,7 @@ public class ProjectDTO  {
         int likeCount;
         private String thumbnail_url;
         private String organization;
+        private String team;
 
     }
 
@@ -176,5 +181,3 @@ public class ProjectDTO  {
         }
     }
 }
-
-

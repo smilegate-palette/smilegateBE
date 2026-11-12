@@ -1,6 +1,7 @@
 package org.example.smilegate.project.controller;
 
 import lombok.RequiredArgsConstructor;
+import org.example.smilegate.project.service.ImageService;
 import org.example.smilegate.project.domain.Project;
 import org.example.smilegate.project.dto.ProjectDTO;
 import org.example.smilegate.project.repository.ProjectRepository;
@@ -10,7 +11,9 @@ import org.example.smilegate.user.repository.UserRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.bind.annotation.*;
+import org.example.smilegate.project.service.ImageService;
 
 import java.util.List;
 
@@ -21,8 +24,19 @@ import java.util.List;
 public class ProjectController {
 
     private final ProjectService projectService;
+    private final ImageService imageService;
     private final UserRepository userRepository;
     private final ProjectRepository projectRepository;
+
+    @PostMapping(value = "/project/thumbnail", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<?> uploadProjectThumbnail(@RequestParam("file") MultipartFile file) throws java.io.IOException {
+        try {
+            String url = imageService.uploadThumbnailFile(file, "thumbnails");
+            return ResponseEntity.ok(java.util.Map.of("url", url));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(java.util.Map.of("message", e.getMessage()));
+        }
+    }
 
     //게시글 생성
     @PostMapping(value = "/project/{user_id}", consumes = {MediaType.APPLICATION_JSON_VALUE})
@@ -137,7 +151,5 @@ public class ProjectController {
         }
     }
 }
-
-
 
 

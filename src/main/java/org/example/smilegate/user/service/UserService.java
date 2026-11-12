@@ -51,8 +51,7 @@ public class UserService {
         if(user == null ){
             throw new IllegalAccessException("아이디 또는 비밀번호가 일치하지 않습니다.");
         }
-        String perfix = "Bearer ";
-        String accesstoken = perfix + jwtUtil.createToken(user.getUsername(), user.getRole());
+        String accesstoken = jwtUtil.createToken(user.getUsername(), user.getRole());
         UserDTO.UserSignupRequest loginResponseDTO = new UserDTO.UserSignupRequest(user.getUsername(),user.getEmail(), user.getPassword(), user.getRole());
 
         return new UserDTO.UserLoginResponse(user.getId(),loginResponseDTO.getEmail(),passwordEncoder.encode(loginResponseDTO.getPassword()), accesstoken,user.getRole());

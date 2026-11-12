@@ -150,10 +150,16 @@ public class ProjectService {
                     .filter(entry -> entry.getStatus() == ProjectStatus.APPROVED)
                     .collect(Collectors.toList());
 
+            Set<Long> projectIds = allProjects.stream()
+                    .map(AdminDTO.CurationSectionProjectDto::getProjectId)
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.toSet());
+            Map<Long, Project> projectsById = projectRepository.findAllById(projectIds).stream()
+                    .collect(Collectors.toMap(Project::getId, project -> project));
+
             return allProjects.stream()
                     .map(dto -> {
-                        Project project = projectRepository.findById(dto.getProjectId())
-                                .orElse(null);
+                        Project project = projectsById.get(dto.getProjectId());
                         if (project == null) {
                             return null;
                         }
@@ -189,12 +195,29 @@ public class ProjectService {
         }
     }
 
+    public ProjectDTO.ProjectResponse UpdateAdminProject(Long projectId, ProjectDTO.ProjectRequest request) throws Exception {
+        Project project = projectRepository.findById(projectId)
+                .orElseThrow(() -> new Exception("프로젝트가 존재하지 않습니다."));
+        request.setThumbnail_url(imageService.uploadThumbnailIfBase64(request.getThumbnail_url(), "thumbnails"));
+        if (request.getProject_title() != null) project.setProject_title(request.getProject_title());
+        if (request.getCategory() != null) project.setCategory(request.getCategory());
+        if (request.getDescription() != null) project.setDescription(request.getDescription());
+        if (request.getOrganization() != null) project.setOrganization(request.getOrganization());
+        if (request.getParticipants() != null) project.setParticipants(request.getParticipants());
+        if (request.getMedia_url() != null) project.setMedia_url(request.getMedia_url());
+        if (request.getThumbnail_url() != null) project.setThumbnail_url(request.getThumbnail_url());
+        projectRepository.save(project);
+        return new ProjectDTO.ProjectResponse(project);
+    }
+
 
 
     //프로젝트 게시글 삭제
     public boolean DeleteProject(Long project_id) throws Exception{
         Project project = projectRepository.findById(project_id)
                 .orElseThrow(() -> new IllegalArgumentException("프로젝트를 찾을 수 없습니다."));
+
+        imageService.deleteThumbnailIfManaged(project.getThumbnail_url(), "thumbnails");
 
         // 모든 섹션의 링크 컬렉션에서 제거 → orphanRemoval로 curation_section_project row 삭제
         for (CurationSection section : curationSectionRepository.findAll()) {

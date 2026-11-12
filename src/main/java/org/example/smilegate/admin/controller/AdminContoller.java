@@ -48,7 +48,7 @@ public class AdminContoller {
     //프로젝트 내용 수정
     @PatchMapping(value = "/admin/{user_id}/{project_id}", consumes = {MediaType.APPLICATION_JSON_VALUE})
     public ResponseEntity<?> AdminProjectUpdate(@RequestBody ProjectDTO.ProjectRequest requestDTO, @PathVariable Long project_id) throws Exception {
-        ProjectDTO.ProjectResponse projectResponse = projectService.UpdateProject(project_id, requestDTO);
+        ProjectDTO.ProjectResponse projectResponse = projectService.UpdateAdminProject(project_id, requestDTO);
         try {
             return ResponseEntity.ok(projectResponse);
         } catch (Exception e) {
@@ -82,7 +82,7 @@ public class AdminContoller {
     @GetMapping(value = "/admin/{user_id}/curation",consumes = {MediaType.APPLICATION_JSON_VALUE})
     public ResponseEntity<?> GetCuration(@PathVariable Long user_id){
         try {
-            List<AdminDTO.CurationSectionDto> responses = adminService.getCurationSections();
+            List<AdminDTO.CurationSectionDto> responses = adminService.getSavedCurationSections();
             return ResponseEntity.ok(responses);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("큐레이션 조회에 실패했습니다." + e);
@@ -94,7 +94,7 @@ public class AdminContoller {
     public ResponseEntity<?> ModifyCurationIndex(@PathVariable Long user_id, @RequestBody AdminDTO.CurationSaveRequest requestDto){
         try {
             adminService.saveCuration(requestDto);
-            List<AdminDTO.CurationSectionDto> updated = adminService.getCurationSections();
+            List<AdminDTO.CurationSectionDto> updated = adminService.getSavedCurationSections();
             return ResponseEntity.ok(updated);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("큐레이션 순서 수정에 실패했습니다." + e);

@@ -38,11 +38,12 @@ public class SecurityConfig {
                         .accessDeniedHandler(new CustomAccessDeniedHandler())
                 )
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                        .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/project/thumbnail").authenticated()
+                        .requestMatchers("/users").hasRole("ADMIN")
                         .requestMatchers("/css/**", "/js/**", "/api/login", "/api/signup/**", "/api/signup",  "/api/**","/api", "/v3/api-docs/**","/swagger-ui/**","/swagger-ui.html","/favicon.ico",
                                 "/error").permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/project/**").permitAll()
-                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
-                        .requestMatchers("/users").hasRole("ADMIN")
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);

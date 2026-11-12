@@ -47,14 +47,14 @@ public class AdminService {
 
         int totalStories = Math.toIntExact(storyRepository.count());
         List<Project> pendingProjects = projectRepository.findByStatus(ProjectStatus.PENDING);
-        List<Project> allProjects = projectRepository.findAll();
+        int totalProjects = Math.toIntExact(projectRepository.count());
 
         LocalDateTime startOfDay = LocalDate.now().atStartOfDay();
         LocalDateTime endOfDay = LocalDate.now().plusDays(1).atStartOfDay();
-        List<Comment> todayComments = commentRepository.findByCreatedAtBetween(startOfDay, endOfDay);
+        int todayCommentCount = Math.toIntExact(commentRepository.countByCreatedAtBetween(startOfDay, endOfDay));
 
         AdminDTO.AdminStatsDto statsDto = new AdminDTO.AdminStatsDto(
-                pendingProjects.size(), allProjects.size(), todayComments.size(), totalStories);
+                pendingProjects.size(), totalProjects, todayCommentCount, totalStories);
 
         List<AdminDTO.ProjectListItemDto> projectListItemDtos = pendingProjects.stream()
                 .map(AdminDTO.ProjectListItemDto::new)
@@ -158,6 +158,22 @@ public class AdminService {
                 .collect(Collectors.toList());
     }
 
+    // 관리자용 조회는 저장된 링크만 반환하며, 빈 섹션을 자동 큐레이션으로 채우지 않는다.
+    public List<AdminDTO.CurationSectionDto> getSavedCurationSections() {
+        return curationSectionRepository.findAll().stream()
+                .sorted(Comparator.comparing(CurationSection::getDisplayOrder,
+                        Comparator.nullsLast(Comparator.naturalOrder())))
+                .map(section -> {
+                    List<AdminDTO.CurationSectionProjectDto> dtos = section.getLinks().stream()
+                            .filter(link -> link.getProject() != null)
+                            .sorted(Comparator.comparingInt(CurationSectionProject::getDisplayOrder))
+                            .map(link -> toProjectDto(link.getProject(), link.getDisplayOrder()))
+                            .collect(Collectors.toList());
+                    return toSectionDto(section, dtos);
+                })
+                .collect(Collectors.toList());
+    }
+
 
         //큐레이션 저장
         public boolean saveCuration(AdminDTO.CurationSaveRequest request) {
@@ -169,22 +185,26 @@ public class AdminService {
                     .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 큐레이션 섹션입니다."));
 
             List<Long> requestIds = request.getProjectIds() == null ? List.of() : request.getProjectIds();
-            List<Long> uniqueIds = new ArrayList<>(new LinkedHashSet<>(requestIds));
-
-            if (uniqueIds.size() > 3) {
+            if (requestIds.size() > 3) {
                 throw new IllegalArgumentException("큐레이션 프로젝트는 최대 3개까지 선택할 수 있습니다.");
+            }
+            if (requestIds.stream().anyMatch(Objects::isNull)) {
+                throw new IllegalArgumentException("프로젝트 ID는 비어 있을 수 없습니다.");
+            }
+            if (new HashSet<>(requestIds).size() != requestIds.size()) {
+                throw new IllegalArgumentException("중복된 프로젝트 ID가 포함되어 있습니다.");
             }
 
             // 검증을 먼저 끝내서, 실패하면 기존 링크가 그대로 남도록 함
             List<Project> ordered = new ArrayList<>();
-            if (!uniqueIds.isEmpty()) {
-                Map<Long, Project> projectMap = projectRepository.findAllById(uniqueIds).stream()
+            if (!requestIds.isEmpty()) {
+                Map<Long, Project> projectMap = projectRepository.findAllById(requestIds).stream()
                         .collect(Collectors.toMap(Project::getId, p -> p));
 
-                if (projectMap.size() != uniqueIds.size()) {
+                if (projectMap.size() != requestIds.size()) {
                     throw new IllegalArgumentException("존재하지 않는 프로젝트 ID가 포함되어 있습니다.");
                 }
-                for (Long id : uniqueIds) {
+                for (Long id : requestIds) {
                     Project project = projectMap.get(id);
                     if (project.getStatus() != APPROVED) {
                         throw new IllegalArgumentException("승인된 프로젝트만 큐레이션에 넣을 수 있습니다. (ID: " + id + ")");
