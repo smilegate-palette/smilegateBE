@@ -1,13 +1,14 @@
 package org.example.smilegate.story.controller;
 
 import lombok.RequiredArgsConstructor;
-import org.example.smilegate.project.dto.ProjectDTO;
+import org.example.smilegate.project.service.ImageService;
 import org.example.smilegate.story.dto.StoryDTO;
 import org.example.smilegate.story.service.StoryService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 @RestController
@@ -15,6 +16,18 @@ import java.util.List;
 @RequestMapping(value = "/api")
 public class StoryController {
     private final StoryService storyService;
+    private final ImageService imageService;
+
+    @PostMapping(value = "/admin/story/thumbnail", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<?> uploadStoryThumbnail(@RequestParam("file") MultipartFile file) throws java.io.IOException {
+        try {
+            String url = imageService.uploadThumbnailFile(file, "story");
+            return ResponseEntity.ok(java.util.Map.of("url", url));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(java.util.Map.of("message", e.getMessage()));
+        }
+    }
+
     //스토리 생성
     @PostMapping(value = "/admin/story/{user_id}", consumes = {MediaType.APPLICATION_JSON_VALUE})
     public ResponseEntity<?> CreateStoryPost(@RequestBody StoryDTO.StoryRequest requestDTO, @PathVariable("user_id") Long user_id) throws Exception {
