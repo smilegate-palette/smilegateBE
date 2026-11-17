@@ -32,7 +32,6 @@ public class Project extends BaseTimeEntity{
     String region;
     @Column(nullable = false)
     List<String> participants;
-    @Lob
     @Column(columnDefinition = "TEXT")
     String description;
     @Enumerated(EnumType.STRING)
