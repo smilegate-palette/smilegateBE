@@ -83,7 +83,7 @@ public class ProjectService {
                     );
                 }
 
-                // 예: GAME / AI / VIDEO 선택
+                // 예: GAME / VIDEO 선택
                 if (type != null && !type.isBlank()) {
                     spec = spec.and((root, query, cb) ->
                             cb.equal(root.get("category"), type)

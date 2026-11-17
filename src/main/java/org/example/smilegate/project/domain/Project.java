@@ -32,6 +32,8 @@ public class Project extends BaseTimeEntity{
     String region;
     @Column(nullable = false)
     List<String> participants;
+    @Lob
+    @Column(columnDefinition = "TEXT")
     String description;
     @Enumerated(EnumType.STRING)
     ProjectCategory category;
@@ -47,10 +49,6 @@ public class Project extends BaseTimeEntity{
     String organization; //기관
     String team;
 
-    // 정렬 기준
-    String sort;
-    Integer page; // 페이지 번호
-    Integer page_limit; // 페이지당 개수
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")

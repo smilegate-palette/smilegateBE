@@ -7,7 +7,6 @@ import org.example.smilegate.comment.dto.CommentDTO;
 import org.example.smilegate.comment.service.CommentService;
 import org.example.smilegate.project.dto.ProjectDTO;
 import org.example.smilegate.project.service.ProjectService;
-import org.example.smilegate.user.domain.User;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -89,6 +88,46 @@ public class AdminContoller {
         }
     }
 
+    // 큐레이션 섹션 생성
+    @PostMapping(value = "/admin/{user_id}/curation/section", consumes = {MediaType.APPLICATION_JSON_VALUE})
+    public ResponseEntity<?> CreateCurationSection(@PathVariable Long user_id,
+                                                  @RequestBody AdminDTO.CurationSaveRequest requestDto){
+        try {
+            adminService.saveCuration(requestDto);
+            List<AdminDTO.CurationSectionDto> updated = adminService.getSavedCurationSections();
+            return ResponseEntity.ok(updated);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("큐레이션 생성에 실패했습니다." + e);
+        }
+    }
+
+    // 큐레이션 섹션 수정
+    @PutMapping(value = "/admin/{user_id}/curation/section/{section_id}", consumes = {MediaType.APPLICATION_JSON_VALUE})
+    public ResponseEntity<?> UpdateCurationSection(@PathVariable Long user_id,
+                                                  @PathVariable Long section_id,
+                                                  @RequestBody AdminDTO.CurationSaveRequest requestDto){
+        try {
+            requestDto.setSection_id(section_id);
+            adminService.saveCuration(requestDto);
+            List<AdminDTO.CurationSectionDto> updated = adminService.getSavedCurationSections();
+            return ResponseEntity.ok(updated);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("큐레이션 수정에 실패했습니다." + e);
+        }
+    }
+
+    // 큐레이션 섹션 삭제
+    @DeleteMapping(value = "/admin/{user_id}/curation/section/{section_id}", consumes = {MediaType.APPLICATION_JSON_VALUE})
+    public ResponseEntity<?> DeleteCurationSection(@PathVariable Long user_id,
+                                                  @PathVariable Long section_id){
+        try {
+            adminService.deleteCurationSection(section_id);
+            return ResponseEntity.ok("큐레이션 섹션 삭제에 성공했습니다.");
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("큐레이션 섹션 삭제에 실패했습니다." + e);
+        }
+    }
+
     // 큐레이션 순서 수정
     @PostMapping(value = "/admin/{user_id}/curation", consumes = {MediaType.APPLICATION_JSON_VALUE})
     public ResponseEntity<?> ModifyCurationIndex(@PathVariable Long user_id, @RequestBody AdminDTO.CurationSaveRequest requestDto){
@@ -98,6 +137,54 @@ public class AdminContoller {
             return ResponseEntity.ok(updated);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("큐레이션 순서 수정에 실패했습니다." + e);
+        }
+    }
+
+    // 배너 조회
+    @GetMapping(value = "/admin/{user_id}/banner", consumes = {MediaType.APPLICATION_JSON_VALUE})
+    public ResponseEntity<?> GetHomeBanners(@PathVariable Long user_id){
+        try {
+            return ResponseEntity.ok(adminService.getHomeBanners());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("배너 조회에 실패했습니다." + e);
+        }
+    }
+
+    // 배너 생성
+    @PostMapping(value = "/admin/{user_id}/banner", consumes = {MediaType.APPLICATION_JSON_VALUE})
+    public ResponseEntity<?> CreateHomeBanner(@PathVariable Long user_id,
+                                             @RequestBody AdminDTO.HomeBannerSaveRequest requestDto){
+        try {
+            adminService.saveHomeBanner(requestDto);
+            return ResponseEntity.ok(adminService.getHomeBanners());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("배너 생성에 실패했습니다." + e);
+        }
+    }
+
+    // 배너 수정
+    @PutMapping(value = "/admin/{user_id}/banner/{banner_id}", consumes = {MediaType.APPLICATION_JSON_VALUE})
+    public ResponseEntity<?> UpdateHomeBanner(@PathVariable Long user_id,
+                                             @PathVariable Long banner_id,
+                                             @RequestBody AdminDTO.HomeBannerSaveRequest requestDto){
+        try {
+            requestDto.setBannerId(banner_id);
+            adminService.saveHomeBanner(requestDto);
+            return ResponseEntity.ok(adminService.getHomeBanners());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("배너 수정에 실패했습니다." + e);
+        }
+    }
+
+    // 배너 삭제
+    @DeleteMapping(value = "/admin/{user_id}/banner/{banner_id}", consumes = {MediaType.APPLICATION_JSON_VALUE})
+    public ResponseEntity<?> DeleteHomeBanner(@PathVariable Long user_id,
+                                             @PathVariable Long banner_id){
+        try {
+            adminService.deleteHomeBanner(banner_id);
+            return ResponseEntity.ok("배너 삭제에 성공했습니다.");
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("배너 삭제에 실패했습니다." + e);
         }
     }
 

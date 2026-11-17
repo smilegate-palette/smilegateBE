@@ -15,8 +15,18 @@ public class CurationSection {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long sectionId;
 
-    private String title;
-    private Integer displayOrder;     // 섹션 간 순서
+    @Column(nullable = false)
+    private String title = "";
+
+    @Column(nullable = false)
+    private Integer displayOrder;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private SectionType sectionType = SectionType.BOTTOM_CURATION;
+
+    @Column(nullable = false)
+    private boolean active = true;
 
     @OneToMany(mappedBy = "section",
             cascade = CascadeType.ALL,

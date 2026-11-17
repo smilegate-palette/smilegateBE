@@ -1,12 +1,12 @@
 package org.example.smilegate.admin.dto;
 
-import jdk.jfr.Category;
 import lombok.Getter;
 import lombok.Setter;
 import org.example.smilegate.comment.domain.Comment;
 import org.example.smilegate.project.domain.Project;
 import org.example.smilegate.project.domain.ProjectCategory;
 import org.example.smilegate.project.domain.ProjectStatus;
+import org.example.smilegate.project.domain.SectionType;
 import org.example.smilegate.user.domain.User;
 
 import java.time.LocalDateTime;
@@ -18,27 +18,25 @@ public class AdminDTO {
     @Getter
     @Setter
     public static class AdminStatsDto {
-        private int pendingApproval;   // 승인대기 건수
-        private int totalProjects;     // 총 프로젝트
-        private int todayComments;     // 오늘 댓글
-        private int totalStories;      // 스토리 수
+        private int pendingApproval;
+        private int totalProjects;
+        private int todayComments;
+        private int totalStories;
 
         public AdminStatsDto(int pendingApprovalCount,int totalProjectsCount,int todayCommentsCount,int totalStoriesCount){
-           this.pendingApproval = pendingApprovalCount;
+            this.pendingApproval = pendingApprovalCount;
             this.totalProjects = totalProjectsCount;
             this.todayComments = todayCommentsCount;
             this.totalStories = totalStoriesCount;
         }
     }
 
-
-    // 승인 대기 프로젝트
     @Getter
     @Setter
     public static class ProjectListItemDto {
         private Long projectId;
         private String projectTitle;
-        private String username;           // 제출자
+        private String username;
         private LocalDateTime createdDate;
         private ProjectCategory category;
         private ProjectStatus status;
@@ -67,8 +65,6 @@ public class AdminDTO {
         }
     }
 
-
-    // 프로젝트 상세 수정
     @Getter
     @Setter
     public static class ProjectDetailDto {
@@ -96,16 +92,13 @@ public class AdminDTO {
             status=project.getStatus();
             description=project.getDescription();
             media_url=project.getMedia_url();
-            participants = project.getParticipants();
-            organization = project.getOrganization();
-            thumbnail_url =project.getThumbnail_url();
-            team = project.getTeam();
+            participants=project.getParticipants();
+            organization=project.getOrganization();
+            thumbnail_url=project.getThumbnail_url();
+            team=project.getTeam();
         }
-
     }
 
-
-    // 댓글
     @Getter
     @Setter
     public static class CommentDto {
@@ -126,14 +119,14 @@ public class AdminDTO {
         }
     }
 
-
-    // 큐레이션 섹션
     @Getter
     @Setter
     public static class CurationSectionDto {
         private Long sectionId;
         private String title;
         private Integer displayOrder;
+        private SectionType sectionType;
+        private boolean active;
         private List<CurationSectionProjectDto> sectionProjects;
     }
 
@@ -141,12 +134,39 @@ public class AdminDTO {
     @Setter
     public static class CurationSectionProjectDto {
         private Long projectId;
-        private String projectTitle;     // 화면 표시용
-        private Integer displayOrder;  // 섹션 내 순서
+        private String projectTitle;
+        private Integer displayOrder;
         private String mediaUrl;
         private ProjectStatus status;
     }
 
+    @Getter
+    @Setter
+    public static class HomeBannerDto {
+        private Long bannerId;
+        private String title;
+        private String subtitle;
+        private String imageUrl;
+        private String backgroundColor;
+        private String buttonText;
+        private String buttonLink;
+        private Integer displayOrder;
+        private boolean active;
+    }
+
+    @Getter
+    @Setter
+    public static class HomeBannerSaveRequest {
+        private Long bannerId;
+        private String title;
+        private String subtitle;
+        private String imageUrl;
+        private String backgroundColor;
+        private String buttonText;
+        private String buttonLink;
+        private Integer displayOrder;
+        private boolean active = true;
+    }
 
     @Getter
     @Setter
@@ -154,8 +174,6 @@ public class AdminDTO {
         String reject_reason;
     }
 
-
-    // 최종
     @Getter
     public static class AdminResponse {
         private AdminStatsDto stats;
@@ -178,13 +196,17 @@ public class AdminDTO {
     @Setter
     public static class CurationSaveRequest {
         private Long section_id;
+        private String title;
+        private Integer displayOrder;
+        private SectionType sectionType;
+        private boolean active = true;
         private List<Long> projectIds;
+
+        public CurationSaveRequest() {}
+
         public CurationSaveRequest(Long section_id, List<Long> projectIds){
-            this.section_id=section_id;
-            this.projectIds=projectIds;
+            this.section_id = section_id;
+            this.projectIds = projectIds;
         }
     }
-
-
-
 }
