@@ -18,10 +18,10 @@ public class StoryEntity extends BaseTimeEntity {
     @Column(nullable = false)
     private String story_title;
 
-    @Column(length = 1000)
+    @Column
     private String thumbnail_url;
 
-    @Column(length = 1000)
+    @Column
     private String link;
 
 
