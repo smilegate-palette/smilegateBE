@@ -121,7 +121,7 @@ public class ProjectService {
                         )
                                 : org.springframework.data.domain.Sort.by(
                                 org.springframework.data.domain.Sort.Direction.DESC,
-                                "createdAt"
+                                "year"
                         );
                 List<Project> projects = projectRepository.findAll(spec, springSort);
                 return projects.stream()
