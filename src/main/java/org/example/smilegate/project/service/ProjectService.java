@@ -94,14 +94,23 @@ public class ProjectService {
 
                 if (keyword != null && !keyword.isBlank()) {
                     String pattern = "%" + keyword.trim().toLowerCase(Locale.ROOT) + "%";
-                    spec = spec.and((root, query, cb) ->
-                            cb.or(
-                                    cb.like(cb.lower(root.get("project_title")), pattern),
-                                    cb.like(cb.lower(root.get("organization")), pattern),
-                                    cb.like(cb.lower(root.get("team")), pattern),
-                                    cb.like(cb.lower(root.get("participants")), pattern)
-                            )
-                    );
+
+                    spec = spec.and((root, query, cb) -> {
+                        Expression<String> participantsText =
+                                cb.function(
+                                        "array_to_string",
+                                        String.class,
+                                        root.get("participants"),
+                                        cb.literal(",")
+                                );
+
+                        return cb.or(
+                                cb.like(cb.lower(root.get("project_title")), pattern),
+                                cb.like(cb.lower(root.get("organization")), pattern),
+                                cb.like(cb.lower(root.get("team")), pattern),
+                                cb.like(cb.lower(participantsText), pattern)
+                        );
+                    });
                 }
 
                 org.springframework.data.domain.Sort springSort =
