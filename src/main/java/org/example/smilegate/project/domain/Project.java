@@ -30,7 +30,6 @@ public class Project extends BaseTimeEntity{
     @Column(nullable = false)
     Integer year;
     String region;
-    @Column(nullable = false)
     List<String> participants;
     @Column(columnDefinition = "TEXT")
     String description;

@@ -137,6 +137,7 @@ public class AdminDTO {
         private String projectTitle;
         private Integer displayOrder;
         private String mediaUrl;
+        private String thumbnailUrl;
         private ProjectStatus status;
     }
 
@@ -144,28 +145,17 @@ public class AdminDTO {
     @Setter
     public static class HomeBannerDto {
         private Long bannerId;
-        private String title;
-        private String subtitle;
         private String imageUrl;
-        private String backgroundColor;
-        private String buttonText;
-        private String buttonLink;
         private Integer displayOrder;
         private boolean active;
+        private org.example.smilegate.project.domain.BannerPage bannerPage;
     }
 
     @Getter
     @Setter
-    public static class HomeBannerSaveRequest {
-        private Long bannerId;
-        private String title;
-        private String subtitle;
-        private String imageUrl;
-        private String backgroundColor;
-        private String buttonText;
-        private String buttonLink;
-        private Integer displayOrder;
-        private boolean active = true;
+    public static class HomePageDto {
+        private List<HomeBannerDto> banners;
+        private List<CurationSectionDto> curationSections;
     }
 
     @Getter
@@ -180,15 +170,18 @@ public class AdminDTO {
         private List<ProjectListItemDto> pendingProjects;
         private List<CommentDto> recentComments;
         private List<CurationSectionDto> curationSections;
+        private List<HomeBannerDto> banners;
 
         public AdminResponse(AdminStatsDto statsDto,
                              List<ProjectListItemDto> projectListItemDtos,
                              List<CommentDto> commentDtoList,
-                             List<CurationSectionDto> curationSectionDtos) {
+                             List<CurationSectionDto> curationSectionDtos,
+                             List<HomeBannerDto> bannerDtos) {
             this.stats = statsDto;
             this.pendingProjects = projectListItemDtos;
             this.recentComments = commentDtoList;
             this.curationSections = curationSectionDtos;
+            this.banners = bannerDtos;
         }
     }
 
@@ -208,5 +201,15 @@ public class AdminDTO {
             this.section_id = section_id;
             this.projectIds = projectIds;
         }
+    }
+
+    @Getter
+    @Setter
+    public static class HomeBannerSaveRequest {
+        private Long bannerId;
+        private String imageUrl;
+        private Integer displayOrder;
+        private boolean active = true;
+        private org.example.smilegate.project.domain.BannerPage bannerPage;
     }
 }

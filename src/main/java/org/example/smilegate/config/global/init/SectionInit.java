@@ -1,6 +1,5 @@
 package org.example.smilegate.config.global.init;
 
-import jakarta.annotation.PostConstruct;
 import lombok.AllArgsConstructor;
 import org.example.smilegate.project.domain.CurationSection;
 import org.example.smilegate.project.domain.HomeBanner;
@@ -19,26 +18,52 @@ public class SectionInit {
 
     @EventListener(ApplicationReadyEvent.class)
     public void init() {
-        if (sectionRepository.count() == 0) {
-            CurationSection home = new CurationSection();
-            home.setTitle("HOME 큐레이션");
-            home.setDisplayOrder(1);
-            home.setSectionType(SectionType.BOTTOM_CURATION);
-            home.setActive(true);
-            sectionRepository.save(home);
+        boolean hasHomeCuration = sectionRepository.findAll().stream()
+                .anyMatch(section -> section.getSectionType() == SectionType.BOTTOM_CURATION);
+        if (!hasHomeCuration) {
+            CurationSection section = new CurationSection();
+            section.setTitle("추천 프로젝트");
+            section.setDisplayOrder(1);
+            section.setSectionType(SectionType.BOTTOM_CURATION);
+            section.setActive(true);
+            sectionRepository.save(section);
         }
+
+        ensureProjectListSection("창의워크숍 프로젝트", 2);
+        ensureProjectListSection("유스파티 프로젝트", 3);
+
+        sectionRepository.findAll().forEach(section -> {
+            if (section.getSectionType() == null) {
+                section.setSectionType(SectionType.BOTTOM_CURATION);
+            }
+            if (section.getTitle() == null || section.getTitle().isBlank()) {
+                section.setTitle("큐레이션");
+            }
+            if (section.getDisplayOrder() == null) {
+                section.setDisplayOrder(1);
+            }
+        });
+        sectionRepository.saveAll(sectionRepository.findAll());
 
         if (homeBannerRepository.count() == 0) {
             HomeBanner banner = new HomeBanner();
-            banner.setTitle("상단 배너");
-            banner.setSubtitle("메인 배너");
             banner.setImageUrl("");
-            banner.setBackgroundColor("#111827");
-            banner.setButtonText("자세히 보기");
-            banner.setButtonLink("/project");
-            banner.setDisplayOrder(1);
+            banner.setDisplayOrder(0);
             banner.setActive(true);
             homeBannerRepository.save(banner);
+        }
+    }
+
+    private void ensureProjectListSection(String title, int displayOrder) {
+        boolean exists = sectionRepository.findAll().stream()
+                .anyMatch(section -> section.getTitle().equals(title));
+        if (!exists) {
+            CurationSection section = new CurationSection();
+            section.setTitle(title);
+            section.setDisplayOrder(displayOrder);
+            section.setSectionType(SectionType.PROJECT_LIST);
+            section.setActive(true);
+            sectionRepository.save(section);
         }
     }
 }

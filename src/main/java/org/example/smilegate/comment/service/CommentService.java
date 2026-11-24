@@ -34,6 +34,8 @@ public class CommentService {
         User user = null;
         if (user_id != null) {
             user = userRepository.findById(user_id).orElse(null);
+        } else if (request.getUserId() != null) {
+            user = userRepository.findById(request.getUserId()).orElse(null);
         }
         Comment comment = Comment.builder()
                         .content(request.getContent())

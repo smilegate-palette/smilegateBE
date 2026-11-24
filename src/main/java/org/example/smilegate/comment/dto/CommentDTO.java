@@ -21,13 +21,16 @@ public class CommentDTO {
         private LocalDateTime updated_at;
         private Long comment_id;
         private String project_title;
+        private Long user_id;
 
         public CommentResponse(Comment comment) {
             this.content = comment.getContent();
             this.nickname = comment.getNickname();
-            this.created_at = LocalDateTime.now();
+            this.created_at = comment.getCreatedAt();
+            this.updated_at = comment.getUpdatedAt();
             this.comment_id=comment.getId();
             this.project_title=comment.getProject().getProject_title();
+            this.user_id = comment.getUser() == null ? null : comment.getUser().getId();
 
         }
 
@@ -40,6 +43,7 @@ public class CommentDTO {
         private String content;
         @Column(nullable = false)
         private String nickname;
+        private Long userId;
 
     }
 }

@@ -124,7 +124,9 @@ public class ImageService {
         }
 
         String objectName = rawPath.substring(pathPrefix.length());
-        if (!objectName.matches("projects/[0-9a-fA-F-]{36}\\.(png|jpg|webp|gif)")) {
+        String prefix = objectPrefix(thumbnailBucket);
+        if (!objectName.startsWith(prefix)
+                || !objectName.substring(prefix.length()).matches("[0-9a-fA-F-]{36}\\.(png|jpg|webp|gif)")) {
             return null;
         }
         return objectName;
@@ -147,7 +149,7 @@ public class ImageService {
 
     private String uploadThumbnailData(ThumbnailData thumbnailData, String thumbnailBucket) {
         String serviceRoleKey = requireSupabaseServiceRoleKey();
-        String objectName = "projects/" + UUID.randomUUID() + "." + thumbnailData.extension();
+        String objectName = objectPrefix(thumbnailBucket) + UUID.randomUUID() + "." + thumbnailData.extension();
         String objectPath = encodePath(thumbnailBucket) + "/" + encodePath(objectName);
         URI uploadUri = URI.create(trimTrailingSlash(supabaseUrl) + "/storage/v1/object/" + objectPath);
 
@@ -263,6 +265,15 @@ public class ImageService {
             case "image/webp" -> "webp";
             case "image/gif" -> "gif";
             default -> "png";
+        };
+    }
+
+    private String objectPrefix(String bucket) {
+        return switch (bucket) {
+            case "thumbnails" -> "projects/";
+            case "banner" -> "banners/";
+            case "story" -> "story/";
+            default -> bucket + "/";
         };
     }
 

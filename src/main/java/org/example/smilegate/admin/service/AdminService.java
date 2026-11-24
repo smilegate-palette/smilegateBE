@@ -4,19 +4,24 @@ import jakarta.transaction.Transactional;
 import lombok.AllArgsConstructor;
 import org.example.smilegate.admin.dto.AdminDTO;
 import org.example.smilegate.comment.repository.CommentRepository;
+import org.example.smilegate.project.domain.BannerPage;
 import org.example.smilegate.project.domain.CurationSection;
 import org.example.smilegate.project.domain.CurationSectionProject;
 import org.example.smilegate.project.domain.HomeBanner;
 import org.example.smilegate.project.domain.Project;
 import org.example.smilegate.project.domain.ProjectStatus;
+import org.example.smilegate.project.domain.SectionType;
 import org.example.smilegate.project.repository.CurationSectionRepository;
 import org.example.smilegate.project.repository.HomeBannerRepository;
 import org.example.smilegate.project.repository.ProjectRepository;
+import org.example.smilegate.project.service.ImageService;
 import org.example.smilegate.story.repository.StoryRepository;
 import org.example.smilegate.user.domain.User;
 import org.example.smilegate.user.repository.UserRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -35,6 +40,7 @@ public class AdminService {
     private final UserRepository userRepository;
     private final StoryRepository storyRepository;
     private final HomeBannerRepository homeBannerRepository;
+    private final ImageService imageService;
 
     public AdminDTO.AdminResponse Adminpage(Long user_id) {
         userRepository.findById(user_id)
@@ -60,7 +66,7 @@ public class AdminService {
                 .collect(Collectors.toList());
 
         List<AdminDTO.CurationSectionDto> curationSectionDtos = getAdminCurationSections();
-        return new AdminDTO.AdminResponse(statsDto, projectListItemDtos, commentDtoList, curationSectionDtos);
+        return new AdminDTO.AdminResponse(statsDto, projectListItemDtos, commentDtoList, curationSectionDtos, getHomeBanners());
     }
 
     public AdminDTO.ProjectDetailDto AdminProjectDetail(Long project_id, Long user_id){
@@ -110,6 +116,7 @@ public class AdminService {
                             .sorted(Comparator.comparing((Project p) -> !selected.containsKey(p.getId()))
                                     .thenComparing(p -> selected.getOrDefault(p.getId(), Integer.MAX_VALUE)))
                             .map(p -> toProjectDto(p, selected.getOrDefault(p.getId(), -1)))
+                            .limit(10)
                             .collect(Collectors.toList());
 
                     return toSectionDto(section, dtos);
@@ -131,9 +138,7 @@ public class AdminService {
                             .collect(Collectors.toList());
 
                     if (dtos.isEmpty()) {
-                        dtos = pickAutoCuration().stream()
-                                .map(p -> toProjectDto(p, -1))
-                                .collect(Collectors.toList());
+                        return toSectionDto(section, List.of());
                     }
                     return toSectionDto(section, dtos);
                 })
@@ -142,7 +147,6 @@ public class AdminService {
 
     public List<AdminDTO.CurationSectionDto> getSavedCurationSections() {
         return curationSectionRepository.findAll().stream()
-                .filter(CurationSection::isActive)
                 .sorted(Comparator.comparing(CurationSection::getDisplayOrder,
                         Comparator.nullsLast(Comparator.naturalOrder())))
                 .map(section -> {
@@ -169,106 +173,140 @@ public class AdminService {
                     .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 큐레이션 섹션입니다."));
         }
 
-        if (request.getTitle() != null && !request.getTitle().isBlank()) {
-            section.setTitle(request.getTitle());
+        if (request.getSectionType() != null) {
+            section.setSectionType(request.getSectionType());
         }
 
-        if (request.getDisplayOrder() != null) {
+        if (section.getSectionType() == SectionType.BOTTOM_CURATION) {
+            section.setDisplayOrder(1);
+        } else {
+            if (request.getDisplayOrder() == null || request.getDisplayOrder() < 2) {
+                throw new IllegalArgumentException("일반 큐레이션 노출 순서는 2 이상이어야 합니다.");
+            }
             section.setDisplayOrder(request.getDisplayOrder());
         }
 
-        if (request.getSectionType() != null) {
-            section.setSectionType(request.getSectionType());
+        if (request.getTitle() != null && !request.getTitle().isBlank()) {
+            section.setTitle(request.getTitle());
         }
 
         section.setActive(request.isActive());
         curationSectionRepository.save(section);
 
-        List<Long> requestIds = request.getProjectIds() == null ? List.of() : request.getProjectIds();
-        if (requestIds.size() > 3) {
-            throw new IllegalArgumentException("큐레이션 프로젝트는 최대 3개까지 선택할 수 있습니다.");
+        List<CurationSection> nonHomeSections = curationSectionRepository.findAll().stream()
+                .filter(item -> item.getSectionType() != SectionType.BOTTOM_CURATION)
+                .sorted(Comparator.comparing(CurationSection::getDisplayOrder,
+                        Comparator.nullsLast(Comparator.naturalOrder()))
+                        .thenComparing(CurationSection::getSectionId,
+                        Comparator.nullsLast(Comparator.naturalOrder())))
+                .collect(Collectors.toList());
+
+        int nextOrder = 2;
+        for (CurationSection item : nonHomeSections) {
+            item.setDisplayOrder(nextOrder++);
         }
-        if (requestIds.stream().anyMatch(Objects::isNull)) {
-            throw new IllegalArgumentException("프로젝트 ID는 비어 있을 수 없습니다.");
+        curationSectionRepository.saveAll(nonHomeSections);
+
+        List<Long> requestIds = request.getProjectIds() == null ? List.of() : request.getProjectIds();
+        if (requestIds.size() > 10) {
+            throw new IllegalArgumentException("큐레이션 프로젝트는 최대 10개까지 선택할 수 있습니다.");
         }
         if (new HashSet<>(requestIds).size() != requestIds.size()) {
             throw new IllegalArgumentException("중복된 프로젝트 ID가 포함되어 있습니다.");
         }
 
-        List<Project> ordered = new ArrayList<>();
-        if (!requestIds.isEmpty()) {
-            Map<Long, Project> projectMap = projectRepository.findAllById(requestIds).stream()
-                    .collect(Collectors.toMap(Project::getId, p -> p));
-
-            if (projectMap.size() != requestIds.size()) {
-                throw new IllegalArgumentException("존재하지 않는 프로젝트 ID가 포함되어 있습니다.");
-            }
-
-            for (Long id : requestIds) {
-                Project project = projectMap.get(id);
-                if (project.getStatus() != APPROVED) {
-                    throw new IllegalArgumentException("승인된 프로젝트만 큐레이션에 넣을 수 있습니다. (ID: " + id + ")");
-                }
-                ordered.add(project);
-            }
+        Map<Long, Project> projectMap = requestIds.isEmpty()
+                ? Map.of()
+                : projectRepository.findAllById(requestIds).stream()
+                        .collect(Collectors.toMap(Project::getId, project -> project));
+        if (projectMap.size() != requestIds.size()) {
+            throw new IllegalArgumentException("존재하지 않는 프로젝트 ID가 포함되어 있습니다.");
         }
 
         section.getLinks().clear();
-        for (int i = 0; i < ordered.size(); i++) {
+        int projectOrder = 0;
+        for (Long projectId : requestIds) {
+            Project project = projectMap.get(projectId);
+            if (project.getStatus() != APPROVED) {
+                throw new IllegalArgumentException("승인된 프로젝트만 큐레이션에 넣을 수 있습니다. (ID: " + projectId + ")");
+            }
             CurationSectionProject link = new CurationSectionProject();
             link.setSection(section);
-            link.setProject(ordered.get(i));
-            link.setDisplayOrder(i);
+            link.setProject(project);
+            link.setDisplayOrder(projectOrder++);
             section.getLinks().add(link);
         }
-
         curationSectionRepository.save(section);
+
         return true;
     }
 
     public boolean deleteCurationSection(Long sectionId) {
         CurationSection section = curationSectionRepository.findById(sectionId)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 큐레이션 섹션입니다."));
+        if (section.getSectionType() == SectionType.BOTTOM_CURATION) {
+            throw new IllegalArgumentException("HOME 큐레이션은 삭제할 수 없습니다.");
+        }
         curationSectionRepository.delete(section);
         return true;
     }
 
-    public List<AdminDTO.HomeBannerDto> getHomeBanners() {
-        return homeBannerRepository.findAllByOrderByDisplayOrderAsc().stream()
+    public List<AdminDTO.HomeBannerDto> getHomeBanners(BannerPage page) {
+        return homeBannerRepository.findAllByDisplayOrderOrderByIdAsc(page.displayOrder()).stream()
                 .map(this::toBannerDto)
                 .collect(Collectors.toList());
     }
 
-    public boolean saveHomeBanner(AdminDTO.HomeBannerSaveRequest request) {
-        if (request == null) {
-            throw new IllegalArgumentException("배너 요청 값이 비어 있습니다.");
-        }
-
-        HomeBanner banner;
-        if (request.getBannerId() == null) {
-            banner = new HomeBanner();
-        } else {
-            banner = homeBannerRepository.findById(request.getBannerId())
-                    .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 배너입니다."));
-        }
-
-        if (request.getTitle() != null) banner.setTitle(request.getTitle());
-        if (request.getSubtitle() != null) banner.setSubtitle(request.getSubtitle());
-        if (request.getImageUrl() != null) banner.setImageUrl(request.getImageUrl());
-        if (request.getBackgroundColor() != null) banner.setBackgroundColor(request.getBackgroundColor());
-        if (request.getButtonText() != null) banner.setButtonText(request.getButtonText());
-        if (request.getButtonLink() != null) banner.setButtonLink(request.getButtonLink());
-        if (request.getDisplayOrder() != null) banner.setDisplayOrder(request.getDisplayOrder());
-        banner.setActive(request.isActive());
-
-        homeBannerRepository.save(banner);
-        return true;
+    public List<AdminDTO.HomeBannerDto> getHomeBanners() {
+        return getHomeBanners(BannerPage.HOME);
     }
 
-    public boolean deleteHomeBanner(Long bannerId) {
-        HomeBanner banner = homeBannerRepository.findById(bannerId)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 배너입니다."));
-        homeBannerRepository.delete(banner);
+    public List<AdminDTO.HomeBannerDto> getPublicHomeBanners() {
+        return getHomeBanners(BannerPage.HOME).stream()
+                .filter(AdminDTO.HomeBannerDto::isActive)
+                .collect(Collectors.toList());
+    }
+
+    public List<AdminDTO.HomeBannerDto> getPublicOffTheRecordBanners() {
+        return getHomeBanners(BannerPage.OFF_THE_RECORD).stream()
+                .filter(AdminDTO.HomeBannerDto::isActive)
+                .collect(Collectors.toList());
+    }
+
+    public AdminDTO.HomeBannerDto uploadBanner(BannerPage page, MultipartFile file) throws java.io.IOException {
+
+        if (file == null || file.isEmpty()) {
+            throw new IllegalArgumentException("업로드할 배너 이미지를 선택해주세요.");
+        }
+
+        String uploadedUrl = imageService.uploadThumbnailFile(file, "banner");
+        Integer displayOrder = page.displayOrder();
+
+        HomeBanner banner = homeBannerRepository.findFirstByDisplayOrder(displayOrder)
+                .orElseGet(HomeBanner::new);
+        String previousUrl = banner.getImageUrl();
+
+        banner.setImageUrl(uploadedUrl);
+        banner.setDisplayOrder(displayOrder);
+        banner.setActive(true);
+        HomeBanner saved = homeBannerRepository.save(banner);
+
+        if (previousUrl != null && !previousUrl.equals(uploadedUrl)) {
+            imageService.deleteThumbnailIfManaged(previousUrl, "banner");
+        }
+        return toBannerDto(saved);
+    }
+
+    public boolean deleteBanner(BannerPage page) {
+        List<HomeBanner> banners = homeBannerRepository.findAllByDisplayOrderOrderByIdAsc(page.displayOrder());
+        if (banners.isEmpty()) {
+            throw new IllegalArgumentException("등록된 배너가 없습니다.");
+        }
+
+        for (HomeBanner banner : banners) {
+            imageService.deleteThumbnailIfManaged(banner.getImageUrl(), "banner");
+            homeBannerRepository.delete(banner);
+        }
         return true;
     }
 
@@ -291,9 +329,18 @@ public class AdminService {
         for (List<Project> group : byLike.values()) {
             Collections.shuffle(group);
             result.addAll(group);
-            if (result.size() >= 5) break;
+            if (result.size() >= 10) break;
         }
-        return result.subList(0, Math.min(5, result.size()));
+        return result.subList(0, Math.min(10, result.size()));
+    }
+
+    private List<Project> pickProjectListCuration(String title) {
+        String keyword = title != null && title.contains("유스") ? "유스" : "창의";
+        return approvedByLikes().stream()
+                .filter(project -> project.getProgram_name() != null
+                        && project.getProgram_name().contains(keyword))
+                .limit(10)
+                .collect(Collectors.toList());
     }
 
     private AdminDTO.CurationSectionDto toSectionDto(CurationSection section,
@@ -313,6 +360,7 @@ public class AdminService {
         dto.setProjectId(p.getId());
         dto.setProjectTitle(p.getProject_title());
         dto.setMediaUrl(p.getMedia_url());
+        dto.setThumbnailUrl(p.getThumbnail_url());
         dto.setDisplayOrder(displayOrder);
         dto.setStatus(p.getStatus());
         return dto;
@@ -321,14 +369,10 @@ public class AdminService {
     private AdminDTO.HomeBannerDto toBannerDto(HomeBanner banner) {
         AdminDTO.HomeBannerDto dto = new AdminDTO.HomeBannerDto();
         dto.setBannerId(banner.getId());
-        dto.setTitle(banner.getTitle());
-        dto.setSubtitle(banner.getSubtitle());
         dto.setImageUrl(banner.getImageUrl());
-        dto.setBackgroundColor(banner.getBackgroundColor());
-        dto.setButtonText(banner.getButtonText());
-        dto.setButtonLink(banner.getButtonLink());
         dto.setDisplayOrder(banner.getDisplayOrder());
         dto.setActive(banner.isActive());
+        dto.setBannerPage(BannerPage.fromDisplayOrder(banner.getDisplayOrder()));
         return dto;
     }
 }

@@ -1,6 +1,7 @@
 package org.example.smilegate.project.controller;
 
 import lombok.RequiredArgsConstructor;
+import org.example.smilegate.admin.dto.AdminDTO;
 import org.example.smilegate.project.service.ImageService;
 import org.example.smilegate.project.domain.Project;
 import org.example.smilegate.project.dto.ProjectDTO;
@@ -51,7 +52,7 @@ public class ProjectController {
     }
 
     //게시글 목록 조회
-    @GetMapping(value = "/project", consumes = {MediaType.APPLICATION_JSON_VALUE})
+    @GetMapping(value = "/project")
     public ResponseEntity<?> GetProjectIndex(@RequestParam(required = false) Integer year,
                                              @RequestParam(required = false) Integer maxYear,
                                              @RequestParam(required = false) String program,
@@ -106,7 +107,7 @@ public class ProjectController {
         }
     }
 
-    //홈 화면(큐레이션)
+    //홈 화면
     @GetMapping
     public ResponseEntity<?> home() {
         try {
@@ -118,32 +119,46 @@ public class ProjectController {
 
     }
 
+    //배너 + 큐레이션 섹션 구조를 위한 공개 설정 조회 API
+    @GetMapping("/home")
+    public ResponseEntity<?> homeSettings() {
+        try {
+            AdminDTO.HomePageDto homeResponse = projectService.GetprojecthomeDetails();
+            return ResponseEntity.status(HttpStatus.OK).body(homeResponse);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("홈 설정 조회에 실패했습니다." + e);
+        }
+    }
+
     //프로젝트 좋아요
-    @PostMapping(value = "/project/{project_id}/like/{user_id}", consumes = {MediaType.APPLICATION_JSON_VALUE})
-    public ResponseEntity<?> LikeProject(@PathVariable Long project_id, @PathVariable Long user_id) {
+    @PostMapping(value = {"/project/{project_id}/like", "/project/{project_id}/like/{user_id}"}, consumes = {MediaType.APPLICATION_JSON_VALUE})
+    public ResponseEntity<?> LikeProject(@PathVariable Long project_id,
+                                         @PathVariable(value = "user_id", required = false) Long user_id) {
        try {
-           User user = userRepository.findById(user_id).orElseThrow(() -> new RuntimeException("로그인을 해주세요"));
-           Project project = projectRepository.findById(project_id).orElseThrow(() -> new RuntimeException("프로젝트를 찾을 수 없습니다."));
-           project.setLikeCount(project.getLikeCount()+1);
-           projectRepository.save(project);
-           ProjectDTO.ProjectLikeResponse projectLikeResponse = new ProjectDTO.ProjectLikeResponse(project.getLikeCount(), true, user.getId(),project.getId());
-           return ResponseEntity.ok(projectLikeResponse);
+            User user = user_id == null ? null : userRepository.findById(user_id).orElse(null);
+            Project project = projectRepository.findById(project_id).orElseThrow(() -> new RuntimeException("프로젝트를 찾을 수 없습니다."));
+            project.setLikeCount(project.getLikeCount()+1);
+            projectRepository.save(project);
+            ProjectDTO.ProjectLikeResponse projectLikeResponse = new ProjectDTO.ProjectLikeResponse(
+                    project.getLikeCount(), true, user == null ? null : user.getId(), project.getId());
+            return ResponseEntity.ok(projectLikeResponse);
 
-       } catch (Exception e) {
-           return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("좋아요에 실패했습니다." + e);
-       }
-
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("좋아요에 실패했습니다." + e);
+        }
     }
 
     // 프로젝트 좋아요 취소
-    @DeleteMapping(value = "/project/{project_id}/like/{user_id}", consumes = {MediaType.APPLICATION_JSON_VALUE})
-    public ResponseEntity<?> LikeCancel(@PathVariable Long project_id, @PathVariable Long user_id){
+    @DeleteMapping(value = {"/project/{project_id}/like", "/project/{project_id}/like/{user_id}"}, consumes = {MediaType.APPLICATION_JSON_VALUE})
+    public ResponseEntity<?> LikeCancel(@PathVariable Long project_id,
+                                        @PathVariable(value = "user_id", required = false) Long user_id){
         try {
-            User user = userRepository.findById(user_id).orElseThrow(() -> new RuntimeException("로그인을 해주세요"));
+            User user = user_id == null ? null : userRepository.findById(user_id).orElse(null);
             Project project = projectRepository.findById(project_id).orElseThrow(() -> new RuntimeException("프로젝트를 찾을 수 없습니다."));
-            project.setLikeCount(project.getLikeCount()-1);
+            project.setLikeCount(Math.max(0, project.getLikeCount()-1));
             projectRepository.save(project);
-            ProjectDTO.ProjectLikeResponse projectLikeResponse = new ProjectDTO.ProjectLikeResponse(project.getLikeCount(), false, user.getId(),project.getId());
+            ProjectDTO.ProjectLikeResponse projectLikeResponse = new ProjectDTO.ProjectLikeResponse(
+                    project.getLikeCount(), false, user == null ? null : user.getId(),project.getId());
             return ResponseEntity.ok(projectLikeResponse);
 
         } catch (Exception e) {
@@ -151,5 +166,3 @@ public class ProjectController {
         }
     }
 }
-
-

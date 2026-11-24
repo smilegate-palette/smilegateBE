@@ -6,11 +6,14 @@ import org.example.smilegate.admin.service.AdminService;
 import org.example.smilegate.comment.dto.CommentDTO;
 import org.example.smilegate.comment.service.CommentService;
 import org.example.smilegate.project.dto.ProjectDTO;
+import org.example.smilegate.project.service.ImageService;
 import org.example.smilegate.project.service.ProjectService;
+import org.example.smilegate.project.domain.BannerPage;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -21,6 +24,7 @@ public class AdminContoller {
     private final AdminService adminService;
     private final ProjectService projectService;
     private final CommentService commentService;
+    private final ImageService imageService;
 
     //관리자 페이지 조회
     @GetMapping(value = "/admin/{user_id}", consumes = {MediaType.APPLICATION_JSON_VALUE})
@@ -140,53 +144,78 @@ public class AdminContoller {
         }
     }
 
-    // 배너 조회
-    @GetMapping(value = "/admin/{user_id}/banner", consumes = {MediaType.APPLICATION_JSON_VALUE})
-    public ResponseEntity<?> GetHomeBanners(@PathVariable Long user_id){
+    // 배너 조회 (page=HOME 또는 OFF_THE_RECORD)
+    @GetMapping(value = "/admin/{user_id}/banner")
+    public ResponseEntity<?> getBanners(@PathVariable Long user_id,
+                                        @RequestParam("page") String page) {
         try {
-            return ResponseEntity.ok(adminService.getHomeBanners());
+            BannerPage bannerPage = BannerPage.fromPath(page);
+            return ResponseEntity.ok(adminService.getHomeBanners(bannerPage));
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("배너 조회에 실패했습니다." + e);
+            return ResponseEntity.badRequest().body(java.util.Map.of("message", e.getMessage()));
         }
     }
 
-    // 배너 생성
-    @PostMapping(value = "/admin/{user_id}/banner", consumes = {MediaType.APPLICATION_JSON_VALUE})
-    public ResponseEntity<?> CreateHomeBanner(@PathVariable Long user_id,
-                                             @RequestBody AdminDTO.HomeBannerSaveRequest requestDto){
+    // 배너 이미지 업로드 (신규 등록)
+    @PostMapping(value = "/admin/{user_id}/banner/{page}/image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<?> uploadBanner(@PathVariable Long user_id,
+                                          @PathVariable String page,
+                                          @RequestParam("file") MultipartFile file) {
         try {
-            adminService.saveHomeBanner(requestDto);
-            return ResponseEntity.ok(adminService.getHomeBanners());
+            BannerPage bannerPage = BannerPage.fromPath(page);
+            AdminDTO.HomeBannerDto banner = adminService.uploadBanner(bannerPage, file);
+            return ResponseEntity.ok(banner);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(java.util.Map.of("message", e.getMessage()));
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("배너 생성에 실패했습니다." + e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(java.util.Map.of("message", "배너 이미지 업로드에 실패했습니다."));
         }
     }
 
-    // 배너 수정
-    @PutMapping(value = "/admin/{user_id}/banner/{banner_id}", consumes = {MediaType.APPLICATION_JSON_VALUE})
-    public ResponseEntity<?> UpdateHomeBanner(@PathVariable Long user_id,
-                                             @PathVariable Long banner_id,
-                                             @RequestBody AdminDTO.HomeBannerSaveRequest requestDto){
+    // 배너 이미지 수정 (같은 업서트 방식)
+    @PutMapping(value = "/admin/{user_id}/banner/{page}/image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<?> updateBanner(@PathVariable Long user_id,
+                                          @PathVariable String page,
+                                          @RequestParam("file") MultipartFile file) {
         try {
-            requestDto.setBannerId(banner_id);
-            adminService.saveHomeBanner(requestDto);
-            return ResponseEntity.ok(adminService.getHomeBanners());
+            BannerPage bannerPage = BannerPage.fromPath(page);
+            AdminDTO.HomeBannerDto banner = adminService.uploadBanner(bannerPage, file);
+            return ResponseEntity.ok(banner);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(java.util.Map.of("message", e.getMessage()));
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("배너 수정에 실패했습니다." + e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(java.util.Map.of("message", "배너 이미지 수정에 실패했습니다."));
         }
     }
 
     // 배너 삭제
-    @DeleteMapping(value = "/admin/{user_id}/banner/{banner_id}", consumes = {MediaType.APPLICATION_JSON_VALUE})
-    public ResponseEntity<?> DeleteHomeBanner(@PathVariable Long user_id,
-                                             @PathVariable Long banner_id){
+    @DeleteMapping(value = "/admin/{user_id}/banner/{page}")
+    public ResponseEntity<?> deleteBanner(@PathVariable Long user_id,
+                                          @PathVariable String page) {
         try {
-            adminService.deleteHomeBanner(banner_id);
-            return ResponseEntity.ok("배너 삭제에 성공했습니다.");
+            BannerPage bannerPage = BannerPage.fromPath(page);
+            adminService.deleteBanner(bannerPage);
+            return ResponseEntity.ok(java.util.Map.of("message", "배너가 삭제되었습니다."));
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("배너 삭제에 실패했습니다." + e);
+            return ResponseEntity.badRequest().body(java.util.Map.of("message", e.getMessage()));
         }
     }
+
+    // 공개 배너 조회 (page=HOME 또는 OFF_THE_RECORD)
+    @GetMapping(value = "/banner")
+    public ResponseEntity<?> getPublicBanner(@RequestParam("page") String page) {
+        try {
+            BannerPage bannerPage = BannerPage.fromPath(page);
+            return ResponseEntity.ok(bannerPage == BannerPage.HOME
+                    ? adminService.getPublicHomeBanners()
+                    : adminService.getPublicOffTheRecordBanners());
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(java.util.Map.of("message", e.getMessage()));
+        }
+    }
+
 
     // 댓글 조회
     @GetMapping(value = "/admin/{user_id}/comment", consumes = {MediaType.APPLICATION_JSON_VALUE })
@@ -196,6 +225,19 @@ public class AdminContoller {
             return ResponseEntity.status(HttpStatus.CREATED).body(responses);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("댓글 조회에 실패했습니다." + e);
+        }
+    }
+
+    // 관리자 홈 설정 조회(배너 + 큐레이션 섹션)
+    @GetMapping(value = "/admin/{user_id}/home", consumes = {MediaType.APPLICATION_JSON_VALUE})
+    public ResponseEntity<?> GetHomeSettings(@PathVariable Long user_id){
+        try {
+            AdminDTO.HomePageDto response = new AdminDTO.HomePageDto();
+            response.setBanners(adminService.getHomeBanners());
+            response.setCurationSections(adminService.getAdminCurationSections());
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("홈 설정 조회에 실패했습니다." + e);
         }
     }
 }
