@@ -59,93 +59,49 @@ public class ProjectService {
                                                             String keyword,
                                                             String sort){
         try {
-            if (program != null && !program.isBlank()) {
-                List<AdminDTO.CurationSectionDto> projectListSections = adminService.getCurationSections().stream()
-                        .filter(section -> section.getSectionType() == org.example.smilegate.project.domain.SectionType.PROJECT_LIST)
-                        .sorted(Comparator.comparing(AdminDTO.CurationSectionDto::getDisplayOrder,
-                                Comparator.nullsLast(Comparator.naturalOrder())))
-                        .collect(Collectors.toList());
-
-                String sectionKeyword = program.contains("유스") ? "유스" : "창의";
-                AdminDTO.CurationSectionDto section = projectListSections.stream()
-                        .filter(item -> item.getTitle() != null && item.getTitle().contains(sectionKeyword))
-                        .findFirst()
-                        .orElse(null);
-
-                if (section != null && keyword == null && year == null && maxYear == null && type == null) {
-                    List<AdminDTO.CurationSectionProjectDto> selected = section.getSectionProjects();
-                    if (selected != null && !selected.isEmpty()) {
-                        List<Long> selectedIds = selected.stream()
-                                .map(AdminDTO.CurationSectionProjectDto::getProjectId)
-                                .filter(Objects::nonNull)
-                                .collect(Collectors.toList());
-                        Map<Long, Project> projectMap = projectRepository.findAllById(selectedIds).stream()
-                                .collect(Collectors.toMap(Project::getId, project -> project));
-                        List<Project> projects = selectedIds.stream()
-                                .map(projectMap::get)
-                                .filter(Objects::nonNull)
-                                .filter(project -> project.getStatus() == ProjectStatus.APPROVED)
-                                .collect(Collectors.toList());
-                        return projects.stream()
-                                .map(ProjectDTO.ProjectResponse::new)
-                                .collect(Collectors.toList());
-                    }
-                }
-            }
             {
                 Specification<Project> spec = Specification.unrestricted();
                 spec = spec.and((root, query, cb) ->
                         cb.equal(root.get("status"), ProjectStatus.APPROVED)
                 );
 
-                // 예: 2025 선택
                 if (year != null) {
-                    spec = spec.and((root, query, cb) ->
-                            cb.equal(root.get("year"), year)
-                    );
+                    if (year == 2023) {
+                        // 2023 이하(2026, 2025, 2024 외 나머지 연도) 조회
+                        spec = spec.and((root, query, cb) ->
+                                cb.or(
+                                        cb.lessThanOrEqualTo(root.get("year"), 2023),
+                                        cb.isNull(root.get("year"))
+                                )
+                        );
+                    } else {
+                        spec = spec.and((root, query, cb) ->
+                                cb.equal(root.get("year"), year)
+                        );
+                    }
                 }
-
-                // 예: ~2023 선택
-                if (maxYear != null) {
-                    spec = spec.and((root, query, cb) ->
-                            cb.lessThanOrEqualTo(root.get("year"), maxYear)
-                    );
-                }
-
-                // 예: 창의워크숍 / 유스파티 선택
                 if (program != null && !program.isBlank()) {
                     spec = spec.and((root, query, cb) ->
                             cb.equal(root.get("program_name"), program)
                     );
                 }
 
-                // 예: GAME / VIDEO 선택
                 if (type != null && !type.isBlank()) {
                     spec = spec.and((root, query, cb) ->
                             cb.equal(root.get("category"), type)
                     );
                 }
 
-                // 프로젝트명 또는 참여자명 검색
                 if (keyword != null && !keyword.isBlank()) {
                     String pattern = "%" + keyword.trim().toLowerCase(Locale.ROOT) + "%";
-
-                    spec = spec.and((root, query, cb) -> {
-                        Expression<String> participantsText =
-                                cb.function(
-                                        "array_to_string",
-                                        String.class,
-                                        root.get("participants"),
-                                        cb.literal(",")
-                                );
-
-                        return cb.or(
-                                cb.like(cb.lower(root.get("project_title")), pattern),
-                                cb.like(cb.lower(root.get("organization")), pattern),
-                                cb.like(cb.lower(root.get("team")), pattern),
-                                cb.like(cb.lower(participantsText), pattern)
-                        );
-                    });
+                    spec = spec.and((root, query, cb) ->
+                            cb.or(
+                                    cb.like(cb.lower(root.get("project_title")), pattern),
+                                    cb.like(cb.lower(root.get("organization")), pattern),
+                                    cb.like(cb.lower(root.get("team")), pattern),
+                                    cb.like(cb.lower(root.get("participants")), pattern)
+                            )
+                    );
                 }
 
                 org.springframework.data.domain.Sort springSort =
@@ -159,10 +115,9 @@ public class ProjectService {
                                 "createdAt"
                         );
                 List<Project> projects = projectRepository.findAll(spec, springSort);
-                List<ProjectDTO.ProjectResponse> projectResponses = projects.stream()
-                        .map(project -> new ProjectDTO.ProjectResponse(
-                                project)).collect(Collectors.toList());
-                return projectResponses;
+                return projects.stream()
+                        .map(ProjectDTO.ProjectResponse::new)
+                        .collect(Collectors.toList());
             }
         }
             catch (Exception e) {

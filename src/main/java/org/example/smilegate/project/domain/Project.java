@@ -38,6 +38,7 @@ public class Project extends BaseTimeEntity{
     @Column(nullable = false)
     @Enumerated(EnumType.STRING)
     ProjectStatus status;
+    @Column(columnDefinition = "TEXT")
     String media_url;
     @Column(nullable = false)
     Integer view_count;
