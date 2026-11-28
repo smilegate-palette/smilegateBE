@@ -154,11 +154,17 @@ public class ProjectService {
             List<AdminDTO.CurationSectionDto> sections = adminService.getCurationSections();
 
             List<AdminDTO.CurationSectionProjectDto> allProjects = sections.stream()
-                    .map(AdminDTO.CurationSectionDto::getSectionProjects)   // 각 섹션의 프로젝트 리스트
+                    .map(AdminDTO.CurationSectionDto::getSectionProjects)
                     .filter(Objects::nonNull)
                     .flatMap(List::stream)
                     .filter(entry -> entry.getStatus() == ProjectStatus.APPROVED)
-                    .collect(Collectors.toList());
+                    .collect(Collectors.collectingAndThen(
+                            Collectors.toMap(
+                                    AdminDTO.CurationSectionProjectDto::getProjectId,
+                                    dto -> dto,
+                                    (first, ignored) -> first,
+                                    LinkedHashMap::new),
+                            map -> new ArrayList<>(map.values())));
 
             Set<Long> projectIds = allProjects.stream()
                     .map(AdminDTO.CurationSectionProjectDto::getProjectId)

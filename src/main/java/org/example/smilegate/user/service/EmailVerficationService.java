@@ -33,7 +33,7 @@ public class EmailVerficationService {
     public void SendVerificationCode(String email) throws Exception {
         User user = userRepository.findByEmail(email);
         if(user != null){
-            throw new Exception("이미 가입된 이메일입니다.");
+            throw new DuplicateEmailException();
         }
         else{
             String code = String.format("%06d", new SecureRandom().nextInt(1_000_000));

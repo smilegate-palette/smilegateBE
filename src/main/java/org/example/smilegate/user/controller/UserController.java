@@ -4,6 +4,8 @@ import lombok.RequiredArgsConstructor;
 import org.example.smilegate.config.global.Oauth.OAuthService;
 import org.example.smilegate.user.domain.User;
 import org.example.smilegate.user.dto.UserDTO;
+import org.example.smilegate.user.service.DuplicateEmailException;
+import org.example.smilegate.user.service.DuplicateUsernameException;
 import org.example.smilegate.user.service.EmailVerficationService;
 import org.example.smilegate.user.service.OauthService.OAuthServiceFactory;
 import org.example.smilegate.user.service.UserService;
@@ -37,6 +39,12 @@ public class UserController {
         try{
             if(!userService.Signup(request)) return ResponseEntity.status(HttpStatus.EXPECTATION_FAILED).body("이메일 인증을 해주세요.");
             else { return ResponseEntity.status(HttpStatus.OK).body("회원가입에 성공했습니다.");}
+        } catch (DuplicateEmailException e) {
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body(java.util.Map.of("code", "DUPLICATE_EMAIL", "message", "이미 가입된 이메일입니다"));
+        } catch (DuplicateUsernameException e) {
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body(java.util.Map.of("code", "DUPLICATE_USERNAME", "message", "이미 중복된 닉네임입니다"));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("회원가입에 실패했습니다." + e);
         }
@@ -47,6 +55,9 @@ public class UserController {
         try {
             emailVerficationService.SendVerificationCode(request.getEmail());
             return ResponseEntity.status(HttpStatus.OK).body("인증번호 전송에 성공했습니다.");
+        } catch (DuplicateEmailException e) {
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body(java.util.Map.of("code", "DUPLICATE_EMAIL", "message", "이미 가입된 이메일입니다"));
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -74,6 +85,40 @@ public class UserController {
         UserDTO.UserLoginResponse response = userService.SNSLogin(user, provider);
         return ResponseEntity.ok(response);
     }
+
+    //회원 탈퇴
+    @DeleteMapping(value = "/user/{user_id}", consumes = {MediaType.APPLICATION_JSON_VALUE})
+    public ResponseEntity<?> DeleteUser(@PathVariable("user_id") Long user_id) throws Exception {
+        boolean success = userService.DeleteUser(user_id);
+        if (success) {
+            return ResponseEntity.status(HttpStatus.OK).body("회원 탈퇴에 성공했습니다.");
+        } else {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("회원 탈퇴에 실패했습니다.");
+        }
+    }
+
+    //회원 정보 수정
+    @PatchMapping(value = "/user/{user_id}", consumes = {MediaType.APPLICATION_JSON_VALUE})
+    public ResponseEntity<?> UpdateUser(@PathVariable("user_id") Long user_id, @RequestBody UserDTO.UserSignupRequest request) throws Exception {
+        try {
+            boolean success = userService.UpdateUser(user_id, request);
+            if (success) {
+                return ResponseEntity.status(HttpStatus.OK).body("회원 정보 수정에 성공했습니다.");
+            } else {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("회원 정보 수정에 실패했습니다.");
+            }
+        } catch (DuplicateEmailException e) {
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body(java.util.Map.of("code", "DUPLICATE_EMAIL", "message", "이미 가입된 이메일입니다"));
+        } catch (DuplicateUsernameException e) {
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body(java.util.Map.of("code", "DUPLICATE_USERNAME", "message", "이미 중복된 닉네임입니다"));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("회원 정보 수정에 실패했습니다." + e);
+        }
+    }
+    
+    
 
 
 

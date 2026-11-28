@@ -19,6 +19,10 @@ public class HomeBanner {
     @Column
     private String imageUrl;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "size", length = 20)
+    private BannerSize size = BannerSize.PC;
+
 
     @Column(nullable = false)
     private Integer displayOrder = 0;
@@ -29,4 +33,3 @@ public class HomeBanner {
 
 
 }
-

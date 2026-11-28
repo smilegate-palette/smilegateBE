@@ -33,6 +33,7 @@ public class UserDTO {
         private String password;
         private String accesstoken;
         private UserRole role;
+        private String username;
 
 
     }

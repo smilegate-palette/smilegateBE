@@ -149,6 +149,7 @@ public class AdminDTO {
         private Integer displayOrder;
         private boolean active;
         private org.example.smilegate.project.domain.BannerPage bannerPage;
+        private org.example.smilegate.project.domain.BannerSize size;
     }
 
     @Getter
@@ -211,5 +212,6 @@ public class AdminDTO {
         private Integer displayOrder;
         private boolean active = true;
         private org.example.smilegate.project.domain.BannerPage bannerPage;
+        private org.example.smilegate.project.domain.BannerSize size;
     }
 }

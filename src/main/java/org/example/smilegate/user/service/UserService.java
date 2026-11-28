@@ -8,6 +8,7 @@ import org.example.smilegate.user.domain.UserRole;
 import org.example.smilegate.user.dto.UserDTO;
 import org.example.smilegate.user.repository.UserRepository;
 import org.example.smilegate.user.repository.VerifiacationCodeRepository;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -28,19 +29,30 @@ public class UserService {
 
     //회원가입
     public boolean Signup(UserDTO.UserSignupRequest request){
+        if (userRepository.existsByEmail(request.getEmail())) {
+            throw new DuplicateEmailException();
+        }
+        if (userRepository.existsByUsername(request.getUsername())) {
+            throw new DuplicateUsernameException();
+        }
         try {
             if (!emailVerficationService.isVerified(request.getEmail())) {
                 return false;
-            } else {
-                request.setPassword(passwordEncoder.encode(request.getPassword()));
-                User user = new User(request);
-                userRepository.save(user);
-                int deletecount = verifiacationCodeRepository.deleteAllByEmail(request.getEmail());
-                System.out.println("Deleted " + deletecount + " verification codes for email: " + request.getEmail());
-                return true;
             }
-        }
-          catch (Exception e) {
+            request.setPassword(passwordEncoder.encode(request.getPassword()));
+            User user = new User(request);
+            userRepository.save(user);
+            int deletecount = verifiacationCodeRepository.deleteAllByEmail(request.getEmail());
+            System.out.println("Deleted " + deletecount + " verification codes for email: " + request.getEmail());
+            return true;
+        } catch (DuplicateEmailException e) {
+            throw e;
+        } catch (DataIntegrityViolationException e) {
+            if (userRepository.existsByUsername(request.getUsername())) {
+                throw new DuplicateUsernameException();
+            }
+            throw new DuplicateEmailException();
+        } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
@@ -54,7 +66,7 @@ public class UserService {
         String accesstoken = jwtUtil.createToken(user.getUsername(), user.getRole());
         UserDTO.UserSignupRequest loginResponseDTO = new UserDTO.UserSignupRequest(user.getUsername(),user.getEmail(), user.getPassword(), user.getRole());
 
-        return new UserDTO.UserLoginResponse(user.getId(),loginResponseDTO.getEmail(),passwordEncoder.encode(loginResponseDTO.getPassword()), accesstoken,user.getRole());
+        return new UserDTO.UserLoginResponse(user.getId(),loginResponseDTO.getEmail(),passwordEncoder.encode(loginResponseDTO.getPassword()), accesstoken,user.getRole(), user.getUsername());
     }
 
     //sns 로그인, 회원가입
@@ -70,11 +82,55 @@ public class UserService {
         String token = jwtUtil.createToken(snsuser.getUsername(), UserRole.USER);
         if(user == null){
            userRepository.save(newUser);
-            return new UserDTO.UserLoginResponse(newUser.getId(), newUser.getEmail(), newUser.getPassword(), token,newUser.getRole());
+            return new UserDTO.UserLoginResponse(newUser.getId(), newUser.getEmail(), newUser.getPassword(), token,newUser.getRole(),newUser.getUsername());
         }
         else{
-            return new UserDTO.UserLoginResponse(user.getId(), user.getEmail(), user.getPassword(), token,newUser.getRole());
+            return new UserDTO.UserLoginResponse(user.getId(), user.getEmail(), user.getPassword(), token,newUser.getRole(), user.getUsername());
         }
 
+    }
+
+    //회원 탈퇴
+    public boolean DeleteUser(Long user_id) throws Exception {
+        User user = userRepository.findById(user_id).orElseThrow(() -> new Exception("사용자가 존재하지 않습니다."));
+        try {
+            userRepository.deleteById(user_id);
+            return true;
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+    
+    //회원 정보 수정
+    public boolean UpdateUser(Long user_id, UserDTO.UserSignupRequest request) throws Exception {
+        User user = userRepository.findById(user_id).orElseThrow(() -> new Exception("사용자가 존재하지 않습니다."));
+
+        if (request.getUsername() != null
+                && !request.getUsername().equals(user.getUsername())
+                && userRepository.existsByUsername(request.getUsername())) {
+            throw new DuplicateUsernameException();
+        }
+        if (request.getEmail() != null
+                && !request.getEmail().equals(user.getEmail())
+                && userRepository.existsByEmail(request.getEmail())) {
+            throw new DuplicateEmailException();
+        }
+
+        String previousUsername = user.getUsername();
+        if (request.getUsername() != null) user.setUsername(request.getUsername());
+        if (request.getEmail() != null) user.setEmail(request.getEmail());
+        if (request.getPassword() != null) user.setPassword(passwordEncoder.encode(request.getPassword()));
+        try {
+            userRepository.save(user);
+        } catch (DataIntegrityViolationException e) {
+            if (request.getUsername() != null
+                    && !request.getUsername().equals(previousUsername)
+                    && userRepository.existsByUsername(request.getUsername())) {
+
+                throw new DuplicateUsernameException();
+            }
+            throw new DuplicateEmailException();
+        }
+        return true;
     }
 }

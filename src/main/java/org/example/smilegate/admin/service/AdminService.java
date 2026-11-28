@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import org.example.smilegate.admin.dto.AdminDTO;
 import org.example.smilegate.comment.repository.CommentRepository;
 import org.example.smilegate.project.domain.BannerPage;
+import org.example.smilegate.project.domain.BannerSize;
 import org.example.smilegate.project.domain.CurationSection;
 import org.example.smilegate.project.domain.CurationSectionProject;
 import org.example.smilegate.project.domain.HomeBanner;
@@ -15,6 +16,7 @@ import org.example.smilegate.project.repository.CurationSectionRepository;
 import org.example.smilegate.project.repository.HomeBannerRepository;
 import org.example.smilegate.project.repository.ProjectRepository;
 import org.example.smilegate.project.service.ImageService;
+import org.example.smilegate.project.service.ProjectStatusMailService;
 import org.example.smilegate.story.repository.StoryRepository;
 import org.example.smilegate.user.domain.User;
 import org.example.smilegate.user.repository.UserRepository;
@@ -41,6 +43,7 @@ public class AdminService {
     private final StoryRepository storyRepository;
     private final HomeBannerRepository homeBannerRepository;
     private final ImageService imageService;
+    private final ProjectStatusMailService projectStatusMailService;
 
     public AdminDTO.AdminResponse Adminpage(Long user_id) {
         userRepository.findById(user_id)
@@ -81,16 +84,21 @@ public class AdminService {
                 .orElseThrow(() -> new IllegalArgumentException("프로젝트를 찾을 수 없습니다."));
         project.setStatus(APPROVED);
         projectRepository.save(project);
+        projectStatusMailService.sendStatusResult(project);
         return true;
     }
 
     public boolean RejectProject(Long project_id, Long user_id,String RejectReason){
         try {
             User user = userRepository.findById(user_id).orElseThrow(() -> new RuntimeException("로그인을 해주세요."));
+            if (RejectReason == null || RejectReason.isBlank()) {
+                throw new IllegalArgumentException("반려 사유를 입력해주세요.");
+            }
             Project project = projectRepository.findById(project_id).orElseThrow(() -> new RuntimeException("프로젝트를 찾을 수 없습니다."));
             project.setStatus(ProjectStatus.REJECTED);
-            project.setReject_reason(RejectReason);
+            project.setReject_reason(RejectReason.trim());
             projectRepository.save(project);
+            projectStatusMailService.sendStatusResult(project);
             return true;
         } catch (Exception e) {
             return false;
@@ -273,7 +281,7 @@ public class AdminService {
                 .collect(Collectors.toList());
     }
 
-    public AdminDTO.HomeBannerDto uploadBanner(BannerPage page, MultipartFile file) throws java.io.IOException {
+    public AdminDTO.HomeBannerDto uploadBanner(BannerPage page, BannerSize size, MultipartFile file) throws java.io.IOException {
 
         if (file == null || file.isEmpty()) {
             throw new IllegalArgumentException("업로드할 배너 이미지를 선택해주세요.");
@@ -282,12 +290,13 @@ public class AdminService {
         String uploadedUrl = imageService.uploadThumbnailFile(file, "banner");
         Integer displayOrder = page.displayOrder();
 
-        HomeBanner banner = homeBannerRepository.findFirstByDisplayOrder(displayOrder)
+        HomeBanner banner = homeBannerRepository.findFirstByDisplayOrderAndSize(displayOrder, size)
                 .orElseGet(HomeBanner::new);
         String previousUrl = banner.getImageUrl();
 
         banner.setImageUrl(uploadedUrl);
         banner.setDisplayOrder(displayOrder);
+        banner.setSize(size);
         banner.setActive(true);
         HomeBanner saved = homeBannerRepository.save(banner);
 
@@ -297,8 +306,8 @@ public class AdminService {
         return toBannerDto(saved);
     }
 
-    public boolean deleteBanner(BannerPage page) {
-        List<HomeBanner> banners = homeBannerRepository.findAllByDisplayOrderOrderByIdAsc(page.displayOrder());
+    public boolean deleteBanner(BannerPage page, BannerSize size) {
+        List<HomeBanner> banners = homeBannerRepository.findAllByDisplayOrderAndSizeOrderByIdAsc(page.displayOrder(), size);
         if (banners.isEmpty()) {
             throw new IllegalArgumentException("등록된 배너가 없습니다.");
         }
@@ -373,6 +382,8 @@ public class AdminService {
         dto.setDisplayOrder(banner.getDisplayOrder());
         dto.setActive(banner.isActive());
         dto.setBannerPage(BannerPage.fromDisplayOrder(banner.getDisplayOrder()));
+        dto.setSize(banner.getSize() == null ? BannerSize.PC : banner.getSize());
+
         return dto;
     }
 }

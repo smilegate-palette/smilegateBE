@@ -10,6 +10,8 @@ import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
+
 @Component
 @AllArgsConstructor
 public class SectionInit {
@@ -18,15 +20,21 @@ public class SectionInit {
 
     @EventListener(ApplicationReadyEvent.class)
     public void init() {
-        boolean hasHomeCuration = sectionRepository.findAll().stream()
-                .anyMatch(section -> section.getSectionType() == SectionType.BOTTOM_CURATION);
-        if (!hasHomeCuration) {
+        List<CurationSection> homeSections = sectionRepository.findAll().stream()
+                .filter(section -> section.getSectionType() == SectionType.BOTTOM_CURATION)
+                .sorted(java.util.Comparator.comparing(CurationSection::getSectionId,
+                        java.util.Comparator.nullsLast(java.util.Comparator.naturalOrder())))
+                .toList();
+
+        if (homeSections.isEmpty()) {
             CurationSection section = new CurationSection();
             section.setTitle("추천 프로젝트");
             section.setDisplayOrder(1);
             section.setSectionType(SectionType.BOTTOM_CURATION);
             section.setActive(true);
             sectionRepository.save(section);
+        } else if (homeSections.size() > 1) {
+            sectionRepository.deleteAll(homeSections.subList(1, homeSections.size()));
         }
 
         ensureProjectListSection("창의워크숍 프로젝트", 2);

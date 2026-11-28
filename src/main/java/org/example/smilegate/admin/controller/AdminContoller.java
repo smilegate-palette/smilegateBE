@@ -9,6 +9,7 @@ import org.example.smilegate.project.dto.ProjectDTO;
 import org.example.smilegate.project.service.ImageService;
 import org.example.smilegate.project.service.ProjectService;
 import org.example.smilegate.project.domain.BannerPage;
+import org.example.smilegate.project.domain.BannerSize;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -160,10 +161,12 @@ public class AdminContoller {
     @PostMapping(value = "/admin/{user_id}/banner/{page}/image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<?> uploadBanner(@PathVariable Long user_id,
                                           @PathVariable String page,
-                                          @RequestParam("file") MultipartFile file) {
+                                          @RequestParam("file") MultipartFile file,
+                                          @RequestParam(value = "size", required = true) String size) {
         try {
             BannerPage bannerPage = BannerPage.fromPath(page);
-            AdminDTO.HomeBannerDto banner = adminService.uploadBanner(bannerPage, file);
+            BannerSize bannerSize = BannerSize.fromParam(size);
+            AdminDTO.HomeBannerDto banner = adminService.uploadBanner(bannerPage, bannerSize, file);
             return ResponseEntity.ok(banner);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(java.util.Map.of("message", e.getMessage()));
@@ -177,10 +180,12 @@ public class AdminContoller {
     @PutMapping(value = "/admin/{user_id}/banner/{page}/image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<?> updateBanner(@PathVariable Long user_id,
                                           @PathVariable String page,
-                                          @RequestParam("file") MultipartFile file) {
+                                          @RequestParam("file") MultipartFile file,
+                                          @RequestParam(value = "size", required = true) String size) {
         try {
             BannerPage bannerPage = BannerPage.fromPath(page);
-            AdminDTO.HomeBannerDto banner = adminService.uploadBanner(bannerPage, file);
+            BannerSize bannerSize = BannerSize.fromParam(size);
+            AdminDTO.HomeBannerDto banner = adminService.uploadBanner(bannerPage, bannerSize, file);
             return ResponseEntity.ok(banner);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(java.util.Map.of("message", e.getMessage()));
@@ -193,10 +198,12 @@ public class AdminContoller {
     // 배너 삭제
     @DeleteMapping(value = "/admin/{user_id}/banner/{page}")
     public ResponseEntity<?> deleteBanner(@PathVariable Long user_id,
-                                          @PathVariable String page) {
+                                          @PathVariable String page,
+                                          @RequestParam(value = "size", required = true) String size) {
         try {
             BannerPage bannerPage = BannerPage.fromPath(page);
-            adminService.deleteBanner(bannerPage);
+            BannerSize bannerSize = BannerSize.fromParam(size);
+            adminService.deleteBanner(bannerPage, bannerSize);
             return ResponseEntity.ok(java.util.Map.of("message", "배너가 삭제되었습니다."));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(java.util.Map.of("message", e.getMessage()));
