@@ -1,5 +1,6 @@
 package org.example.smilegate.admin.dto;
 
+import jakarta.persistence.Column;
 import lombok.Getter;
 import lombok.Setter;
 import org.example.smilegate.comment.domain.Comment;
@@ -80,6 +81,9 @@ public class AdminDTO {
         private String organization;
         private String thumbnail_url;
         private String team;
+        private String program_name;
+        private Integer year;
+
 
         public ProjectDetailDto(Project project){
             project_id=project.getId();
@@ -96,6 +100,8 @@ public class AdminDTO {
             organization=project.getOrganization();
             thumbnail_url=project.getThumbnail_url();
             team=project.getTeam();
+            program_name=project.getProgram_name();
+            year=project.getYear();
         }
     }
 

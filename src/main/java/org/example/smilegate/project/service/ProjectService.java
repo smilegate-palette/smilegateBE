@@ -218,6 +218,7 @@ public class ProjectService {
         }
     }
 
+    //관리자 프로젝트 게시물 수정
     public ProjectDTO.ProjectResponse UpdateAdminProject(Long projectId, ProjectDTO.ProjectRequest request) throws Exception {
         Project project = projectRepository.findById(projectId)
                 .orElseThrow(() -> new Exception("프로젝트가 존재하지 않습니다."));
@@ -229,6 +230,8 @@ public class ProjectService {
         if (request.getParticipants() != null) project.setParticipants(request.getParticipants());
         if (request.getMedia_url() != null) project.setMedia_url(request.getMedia_url());
         if (request.getThumbnail_url() != null) project.setThumbnail_url(request.getThumbnail_url());
+        if(request.getYear() != null) project.setYear(request.getYear());
+        if(request.getProgram_name() != null) project.setProgram_name(request.getProgram_name());
         projectRepository.save(project);
         return new ProjectDTO.ProjectResponse(project);
     }
